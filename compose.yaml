@@ -14,16 +14,12 @@ services:
       WYLDTONE_JUCE_MODE: upstream
       CARGO_HOME: /cache/cargo
       CARGO_TARGET_DIR: /cache/target
-      CARGO_BUILD_JOBS: "1"
-      CMAKE_BUILD_PARALLEL_LEVEL: "1"
       CARGO_INCREMENTAL: "0"
     volumes:
       - ./:/workspace
       - ../JUCE-upstream:/opt/juce:ro
       - ./.cache/cargo:/cache/cargo
       - ./.cache/target:/cache/target
-    cpus: 1.0
-    mem_limit: 8g
     pids_limit: 256
     init: true
     security_opt:
