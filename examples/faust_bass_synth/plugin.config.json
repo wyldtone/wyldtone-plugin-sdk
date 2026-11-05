@@ -1,0 +1,23 @@
+{
+  "id": "org.wyldtone.examples.faust-bass-synth",
+  "name": "Wyldtone Bass Synth",
+  "manufacturer": "Wyldtone SDK Examples",
+  "version": "0.4.0",
+  "category": "Synth",
+  "faust": {
+    "source": "bass_synth.dsp",
+    "extra_inputs": 2,
+    "extra_sources": [
+      "tracking/YinTracker.cpp",
+      "tracking/BassSynthControl.cpp"
+    ]
+  },
+  "audio": {
+    "inputs": [
+      2
+    ],
+    "outputs": [
+      2
+    ]
+  }
+}

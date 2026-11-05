@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Thin local wrapper for the Docker-based Wyldtone Plugin SDK.
+# SPDX-License-Identifier: Apache-2.0
+set -euo pipefail
+
+# Resolve symlinks so the launcher can also be installed in ~/.local/bin.
+source_path="${BASH_SOURCE[0]}"
+while [[ -L "$source_path" ]]; do
+  source_dir="$(cd -P "$(dirname "$source_path")" && pwd)"
+  target="$(readlink "$source_path")"
+  if [[ "$target" = /* ]]; then
+    source_path="$target"
+  else
+    source_path="$source_dir/$target"
+  fi
+done
+sdk_dir="$(cd -P "$(dirname "$source_path")" && pwd)"
+
+if [[ ! -f "$sdk_dir/compose.yaml" ]]; then
+  echo "Wyldtone SDK: compose.yaml missing in $sdk_dir" >&2
+  exit 1
+fi
+if ! command -v docker >/dev/null 2>&1; then
+  echo 'Wyldtone SDK: Docker is not installed or not on PATH.' >&2
+  exit 1
+fi
+
+# For calls inside the SDK tree, preserve the caller's directory inside Docker.
+# Calls from elsewhere use /workspace (the SDK root).
+caller_dir="$(pwd -P)"
+case "$caller_dir" in
+  "$sdk_dir") workdir='/workspace' ;;
+  "$sdk_dir"/*) workdir="/workspace/${caller_dir#"$sdk_dir"/}" ;;
+  *) workdir='/workspace' ;;
+esac
+
+# Make cache directories as the invoking user, before Docker can create them as root.
+mkdir -p "$sdk_dir/.cache/cargo" "$sdk_dir/.cache/target"
+
+if [[ "$#" -eq 0 ]]; then
+  set -- help
+fi
+
+user_id="$(id -u)"
+group_id="$(id -g)"
+
+# Docker may use a rootless daemon or the user may already have daemon access.
+# Otherwise retain the existing sudo-based workflow without changing permissions.
+if docker info >/dev/null 2>&1; then
+  exec env HOST_UID="$user_id" HOST_GID="$group_id" \
+    docker compose --project-directory "$sdk_dir" -f "$sdk_dir/compose.yaml" \
+    run --rm --workdir "$workdir" sdk "$@"
+else
+  if ! command -v sudo >/dev/null 2>&1; then
+    echo 'Wyldtone SDK: Cannot access Docker daemon and sudo is unavailable.' >&2
+    exit 1
+  fi
+  exec sudo env HOST_UID="$user_id" HOST_GID="$group_id" \
+    docker compose --project-directory "$sdk_dir" -f "$sdk_dir/compose.yaml" \
+    run --rm --workdir "$workdir" sdk "$@"
+fi

@@ -1,0 +1,9 @@
+{
+  "id": "org.wyldtone.examples.faust-gain",
+  "name": "Faust Stereo Gain",
+  "manufacturer": "Wyldtone SDK Examples",
+  "version": "0.1.0",
+  "category": "Utility",
+  "faust": {"source": "gain.dsp"},
+  "audio": {"inputs": [2], "outputs": [2]}
+}

@@ -1,0 +1,9 @@
+{
+  "id": "org.wyldtone.examples.cpp-loop-freeze",
+  "name": "Wyldtone Loop Freeze",
+  "manufacturer": "Wyldtone SDK Examples",
+  "version": "0.1.0",
+  "category": "Delay",
+  "cpp": { "sources": ["plugin.cpp"] },
+  "audio": { "inputs": [2], "outputs": [2] }
+}

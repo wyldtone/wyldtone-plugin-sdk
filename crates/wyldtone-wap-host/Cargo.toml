@@ -1,0 +1,12 @@
+[package]
+name = "wyldtone-wap-host"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "wap-host"
+path = "src/main.rs"
+
+[dependencies]
+wyldtone-plugin-packager = { path = "../wyldtone-plugin-packager" }
+wyldtone-plugin-runtime = { path = "../wyldtone-plugin-runtime" }

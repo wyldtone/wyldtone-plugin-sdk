@@ -1,0 +1,9 @@
+{
+  "id": "org.wyldtone.examples.faust-stereo-slapback",
+  "name": "Wyldtone Stereo Slapback",
+  "manufacturer": "Wyldtone SDK Examples",
+  "version": "0.1.0",
+  "category": "Delay",
+  "faust": { "source": "stereo_slapback.dsp" },
+  "audio": { "inputs": [2], "outputs": [2] }
+}

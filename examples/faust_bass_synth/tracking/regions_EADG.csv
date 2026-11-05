@@ -1,0 +1,7 @@
+# name,start_seconds,end_seconds,expected_hz
+# Dry half of the user's dry_wet_synth.wav recording, open strings E A D G.
+# The evaluator skips 250 ms after each region start to ignore the attack.
+E1,4.00,5.65,41.2034
+A1,6.46,7.75,55.0000
+D2,8.40,9.88,73.4162
+G2,10.60,12.55,97.9989

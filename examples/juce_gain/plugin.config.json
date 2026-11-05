@@ -1,0 +1,22 @@
+{
+  "id": "org.wyldtone.example.juce-gain",
+  "name": "JUCE Gain Example",
+  "manufacturer": "Wyldtone SDK Examples",
+  "version": "0.1.0",
+  "category": "Utility",
+  "audio": {
+    "inputs": [
+      2
+    ],
+    "outputs": [
+      2
+    ]
+  },
+  "juce": {
+    "processor": "WyldtoneJuceGainProcessor",
+    "header": "PluginProcessor.h",
+    "modules": [],
+    "include_dirs": [],
+    "simd128": false
+  }
+}

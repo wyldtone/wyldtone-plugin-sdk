@@ -1,0 +1,12 @@
+**/.git
+**/target
+**/.cache
+**/wasm-cache
+/examples/*/build
+/tests/**/build
+**/__pycache__
+**/*.wasm
+**/*.wap
+**/*.wav
+**/*.nam
+**/*.zip

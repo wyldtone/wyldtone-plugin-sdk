@@ -1,0 +1,8 @@
+[package]
+name = "wyldtone-plugin-packager"
+version.workspace = true
+edition.workspace = true
+[dependencies]
+wyldtone-plugin-api = { path = "../wyldtone-plugin-api" }
+serde_json.workspace = true
+zip = "4"

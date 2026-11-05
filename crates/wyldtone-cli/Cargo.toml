@@ -1,0 +1,12 @@
+[package]
+name = "wyldtone-cli"
+version.workspace = true
+edition.workspace = true
+[[bin]]
+name = "wyldtone"
+path = "src/main.rs"
+[dependencies]
+wyldtone-plugin-api = { path = "../wyldtone-plugin-api" }
+wyldtone-plugin-runtime = { path = "../wyldtone-plugin-runtime" }
+wyldtone-plugin-packager = { path = "../wyldtone-plugin-packager" }
+serde_json.workspace = true

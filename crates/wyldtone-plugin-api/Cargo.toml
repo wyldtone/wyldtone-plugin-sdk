@@ -1,0 +1,10 @@
+[package]
+name = "wyldtone-plugin-api"
+version.workspace = true
+edition.workspace = true
+[dependencies]
+serde.workspace = true
+ringbuf = "0.5.1"
+
+[dev-dependencies]
+serde_json.workspace = true

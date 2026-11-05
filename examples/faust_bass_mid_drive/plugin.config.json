@@ -1,0 +1,9 @@
+{
+  "id": "org.wyldtone.examples.faust-bass-mid-drive",
+  "name": "Wyldtone Bass Mid Drive",
+  "manufacturer": "Wyldtone SDK Examples",
+  "version": "0.1.0",
+  "category": "Drive",
+  "faust": { "source": "bass_mid_drive.dsp" },
+  "audio": { "inputs": [2], "outputs": [2] }
+}

@@ -1,0 +1,9 @@
+{
+  "id": "org.wyldtone.examples.faust-stereo-chorus",
+  "name": "Wyldtone Stereo Chorus",
+  "manufacturer": "Wyldtone SDK Examples",
+  "version": "0.1.0",
+  "category": "Modulation",
+  "faust": { "source": "stereo_chorus.dsp" },
+  "audio": { "inputs": [2], "outputs": [2] }
+}

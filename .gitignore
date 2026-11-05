@@ -1,0 +1,13 @@
+/target/
+/.cache/
+/wasm-cache/
+/build/
+/examples/*/build/
+/tests/**/build/
+**/__pycache__/
+*.pyc
+*.wap
+*.wasm
+*.wav
+*.tgz
+.DS_Store

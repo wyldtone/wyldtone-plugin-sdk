@@ -1,0 +1,8 @@
+[package]
+name = "wyldtone-plugin-runtime"
+version.workspace = true
+edition.workspace = true
+[dependencies]
+wyldtone-plugin-api = { path = "../wyldtone-plugin-api" }
+wasmtime = { version = "49.0.1", features = ["component-model-async"] }
+wasmtime-wasi = "49.0.1"
