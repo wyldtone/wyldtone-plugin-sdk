@@ -7,7 +7,8 @@ included and remains proprietary**.
 **Beta version:** `0.2.0-beta.1` (source-only). This repository provides the SDK source;
 there are no prebuilt WAPs, Docker images or JUCE framework files in the release.
 The beta is not a security certification or an independent legal assessment.
-See `RELEASE-CHECKLIST.md` for verification and release scope.
+See [third-party notices](THIRD-PARTY-NOTICES.md) and [security guidance](SECURITY.md)
+for distribution boundaries and known limitations.
 
 ## Quick start (Linux / Docker)
 
@@ -125,5 +126,4 @@ retains its own license and notice requirements. JUCE/AGPL code is
 not sublicensed, and generating a JUCE-based WAP can trigger JUCE license
 obligations. The marketplace and proprietary host's legal position require
 separate review. See [JUCE licensing](docs/juce-licensing.md),
-[third-party notices](THIRD-PARTY-NOTICES.md), [security](SECURITY.md), and
-[release checklist](RELEASE-CHECKLIST.md).
+[third-party notices](THIRD-PARTY-NOTICES.md) and [security](SECURITY.md).
