@@ -365,9 +365,17 @@ pub fn load_wap_manifest(path: impl AsRef<Path>) -> Result<PluginManifest, Box<d
     let mut archive = ZipArchive::new(file)?;
 
     let mut manifest_file = archive.by_name("manifest.json")?;
+    const MAX_MANIFEST_BYTES: u64 = 1024 * 1024;
+    if manifest_file.size() > MAX_MANIFEST_BYTES {
+        return Err("WAP manifest.json exceeds 1 MiB".into());
+    }
 
+    // Bound the amount actually decompressed, even if ZIP metadata is wrong.
     let mut json = String::new();
-    manifest_file.read_to_string(&mut json)?;
+    manifest_file.take(MAX_MANIFEST_BYTES + 1).read_to_string(&mut json)?;
+    if json.len() as u64 > MAX_MANIFEST_BYTES {
+        return Err("WAP manifest.json exceeds 1 MiB".into());
+    }
 
     let manifest = serde_json::from_str(&json)?;
 
