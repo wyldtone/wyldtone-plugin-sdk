@@ -97,8 +97,12 @@ real-time behavior**. See [developer workflow](docs/developer-workflow.md).
 ```
 
 The host supports a single matching mono or stereo bus and writes float32 WAV.
-It is an independent SDK example, *not* an implementation of the proprietary
-engine. More in [reference host](docs/reference-host.md).
+Beyond testing finished plugins, it is an **open-source implementation example
+for developers building their own WAP-compatible hosts**: it demonstrates how
+to load a WAP, interpret its manifest, instantiate the WASM module, communicate
+through the public ABI, and process audio. It is deliberately minimal and
+**not** the proprietary Wyldtone engine or a complete DAW/real-time host.
+See [reference host](docs/reference-host.md) and [WAP format](docs/wap-format.md).
 
 ## Contents
 
