@@ -156,8 +156,9 @@ audio device or proprietary Wyldtone engine.
 - `New project already exists`: choose another directory; `new` never
   overwrites an existing project.
 
-## Public release reminder
+## Distribution and licensing
 
-Review `RELEASE-CHECKLIST.md`, provenance and all third-party notices before
-publishing the SDK. Keep the original engine proprietary and absent from the
-public repository. No JUCE sources are embedded in this template generator.
+Before distributing plugins built with the SDK, review [third-party notices](../THIRD-PARTY-NOTICES.md),
+[JUCE licensing](juce-licensing.md), and [security guidance](../SECURITY.md).
+The proprietary Wyldtone engine is not included in this public repository.
+No JUCE sources are embedded in this template generator.
