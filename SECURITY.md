@@ -1,7 +1,9 @@
 # Security
 
 Please report security issues privately to the repository maintainers using
-GitHub's private vulnerability reporting feature (once enabled). Do not post
+GitHub's private vulnerability reporting feature **if enabled on this repository**.
+If that option is unavailable, contact the maintainers through an appropriate
+private channel rather than publishing exploit details. Do not post
 working exploits or sensitive examples in public issues.
 
 The reference host is for **trusted, local plugin testing**. The runtime's
