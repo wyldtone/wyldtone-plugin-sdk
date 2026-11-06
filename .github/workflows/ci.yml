@@ -28,6 +28,13 @@ jobs:
       - name: Verify public source-only file inventory
         run: python3 scripts/check_release_inventory.py
 
+      - name: Run Python unit and source-level smoke tests
+        run: |
+          python3 -m unittest discover -s tests/unit -p 'test_*.py'
+          python3 tests/standalone_smoke.py
+          python3 tests/audio_bus_smoke.py
+          python3 tools/check_plugin_configs.py
+
       - name: Prepare Docker workspace
         run: |
           mkdir -p .cache/cargo .cache/target
