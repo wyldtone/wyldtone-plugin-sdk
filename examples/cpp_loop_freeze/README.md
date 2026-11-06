@@ -105,5 +105,6 @@ uses `abi/include/wasm_plugin.h`.
 - At very high dry+freeze levels output may clip. Adjust both levels.
 - Audio callback is designed to be allocation-free, but real-time performance
   needs to be measured on the target host and buffer sizes.
-- Native C++ tests were run successfully in the artifact environment. The Emscripten/Wasmtime/WAP build and real-time behavior should also be
-  validated on each intended target host.
+- The native C++ regression tests cover capture/release behavior; the actual
+  Emscripten/Wasmtime/WAP build and real-time performance should be validated
+  on each intended target host.
