@@ -25,6 +25,9 @@ jobs:
       - name: Check out SDK
         uses: actions/checkout@v4
 
+      - name: Verify public source-only file inventory
+        run: python3 scripts/check_release_inventory.py
+
       - name: Prepare Docker workspace
         run: |
           mkdir -p .cache/cargo .cache/target
