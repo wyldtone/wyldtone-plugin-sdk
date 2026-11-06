@@ -15,23 +15,26 @@ The capture can sound rhythmic or flutter slightly, particularly with a short
 loop or sustained harmonic material. The release is not an endlessly decaying
 reverb; it is a held snippet that is explicitly released.
 
-## Build on wyserver
+## Build from a fresh SDK checkout
 
-Extract the files at the SDK root, preserving `examples/cpp_loop_freeze/`.
+The complete plugin source is included under `examples/cpp_loop_freeze/`.
+From the SDK root, first build the developer image if needed
+(`docker compose build sdk`), then:
 
 ```bash
-sudo docker compose run --rm sdk build examples/cpp_loop_freeze/plugin.config.json --skip-dsp-test
+./wyldtone build examples/cpp_loop_freeze/plugin.config.json --skip-dsp-test
 ```
 
-Outputs under `examples/cpp_loop_freeze/build/wyldtone/` include `plugin.wasm`,
-`manifest.json`, and a `.wap` file. Load the `.wap` into Wyldtone as with the
-previous SDK examples. This plugin does not require an image rebuild.
+The generated `plugin.wasm`, `manifest.json` and `.wap` live under
+`examples/cpp_loop_freeze/build/wyldtone/`.
+The generic DSP parameter probe cannot reproduce the capture/hold sequence
+required by a freeze effect, so `--skip-dsp-test` is recommended. Run the
+included native regression tests below to check capture, looping and release.
 
-`--skip-dsp-test` is recommended for the first integration: the generic
-parameter probe varies isolated settings without a natural capture/hold
-sequence; parameters such as Capture Length and Seam Crossfade only affect
-an **actual freeze capture** and would be reported as inconclusive or WARN.
-The included native regression test explicitly exercises that sequence.
+The proprietary live Wyldtone host is still in private testing and is not
+publicly available. The SDK's offline reference host can render WAV files,
+but its static parameter settings do not replace an interactive Freeze
+on/off test.
 
 ## Controls
 
@@ -102,5 +105,6 @@ uses `abi/include/wasm_plugin.h`.
 - At very high dry+freeze levels output may clip. Adjust both levels.
 - Audio callback is designed to be allocation-free, but real-time performance
   needs to be measured on the target host and buffer sizes.
-- Native C++ tests were run successfully in the artifact environment. The
-  actual Emscripten/Wasmtime/WAP build still needs validation on `wyserver`.
+- The native C++ regression tests cover capture/release behavior; the actual
+  Emscripten/Wasmtime/WAP build and real-time performance should be validated
+  on each intended target host.

@@ -3,15 +3,29 @@
 The SDK does not ship JUCE. Obtain an external licensed JUCE checkout yourself;
 the tested development baseline is commit `7aae7d8e8`.
 
-On Linux:
+### Docker-based build (recommended)
 
-```sh
+From the SDK root on Linux, supply an external JUCE checkout at the
+**sibling** path expected by `compose.yaml`. The public CI validates the
+specific upstream commit shown below:
+
+```bash
 git clone https://github.com/juce-framework/JUCE.git ../JUCE-upstream
-git -C ../JUCE-upstream checkout 7aae7d8e8
-export JUCE_DIR="$(realpath ../JUCE-upstream)"
-export WYLDTONE_JUCE_MODE=upstream
-cargo run --release -p wyldtone-cli -- build examples/juce_gain/plugin.config.json
+git -C ../JUCE-upstream checkout 7aae7d8e8deb8413bb01633d2795ef9974a181c5
+docker compose build sdk
+./wyldtone build examples/juce_gain/plugin.config.json
+./wyldtone inspect examples/juce_gain/build/wyldtone/JUCE-Gain-Example.wap
 ```
+
+On Windows with Docker Desktop, use the same sibling JUCE checkout and
+`docker compose build sdk`, then replace `./wyldtone` with
+`.\wyldtone.cmd` in the last two commands.
+
+The container already sets `JUCE_DIR=/opt/juce` and
+`WYLDTONE_JUCE_MODE=upstream`. Setting `JUCE_DIR` in the host shell is
+not necessary for Docker builds. For native (non-Docker) builds, configure
+those variables yourself and install the full Rust/CMake/Emscripten toolchain.
+JUCE is licensed separately; see [JUCE licensing](juce-licensing.md).
 
 The `sdk` Docker Compose service mounts `../JUCE-upstream` read-only at
 `/opt/juce`; the original checkout is not modified. GUI-only editor methods

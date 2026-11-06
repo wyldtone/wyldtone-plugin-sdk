@@ -10,52 +10,89 @@ The beta is not a security certification or an independent legal assessment.
 See [third-party notices](THIRD-PARTY-NOTICES.md) and [security guidance](SECURITY.md)
 for distribution boundaries and known limitations.
 
-## Quick start (Linux / Docker)
+## Your first plugin (Linux / Docker)
 
-```sh
-# Clone your own JUCE checkout separately only if building JUCE examples.
-sudo docker compose build sdk  # one-time image build; omit sudo if Docker is accessible
-chmod +x wyldtone              # only necessary if your extraction lost execute bits
-./wyldtone test
-./wyldtone build examples/gain/plugin.config.json
-./wyldtone build examples/faust_gain/plugin.config.json
+Requirements: **Git, Docker Engine with Docker Compose v2**, and a Linux
+x86-64 (amd64) machine with enough free disk space for the toolchain build.
+The first Docker build downloads compiler and Rust dependencies and may take
+some time. No local Rust, C++ compiler or Faust installation is needed.
+
+Run these commands from a terminal:
+
+```bash
+git clone https://github.com/wyldtone/wyldtone-plugin-sdk.git
+cd wyldtone-plugin-sdk
+docker compose build sdk
+./wyldtone doctor
+./wyldtone new MyGain --template cpp
+./wyldtone build MyGain
+./wyldtone validate MyGain/build/wyldtone/MyGain.wap
+./wyldtone host render MyGain/build/wyldtone/MyGain.wap \
+  --test-tone 110 --duration 2 --rate 48000 --out MyGain/build/wyldtone/demo.wav
 ```
 
-The root-level `wyldtone` launcher invokes Docker Compose for you; it uses
-`sudo` only when direct Docker access is unavailable and does not require
-changing Docker group membership. Commands executed from an SDK subdirectory
-run in that directory in the container. From outside the SDK tree, the working
-directory defaults to the SDK root. To call `wyldtone` without `./`, add a
-symlink in `~/.local/bin` (see [developer workflow](docs/developer-workflow.md)).
+The output is `MyGain/build/wyldtone/MyGain.wap`, with a rendered
+`demo.wav` to play in any audio player. Open `MyGain/plugin.cpp`, modify
+the effect, and run `./wyldtone build MyGain` again. `new` creates a
+starter project; it refuses to overwrite an existing directory.
+Replace the generated `org.example.*` ID and manufacturer before
+publishing your own plugin.
 
-Output: `examples/<example>/build/wyldtone/*.wap`. For JUCE, use the external
-`JUCE-upstream` mount described in `docs/juce.md`.
+If Docker needs root access, use `sudo docker compose build sdk` for the
+image build. The `./wyldtone` launcher uses `sudo` for container
+commands only when direct Docker access is unavailable. Avoid adding
+your account to the `docker` group solely for this SDK; Docker daemon
+access grants elevated host privileges.
 
+The `compose.yaml` mounts a sibling `../JUCE-upstream` directory.
+It may be empty for C++ and Faust work; JUCE itself is **not required**
+for this quickstart.
 
-## Quick start (Windows / Docker Desktop)
+### Windows (Docker Desktop)
 
-Install Docker Desktop and enable **Linux containers** (WSL 2 backend is
-recommended). In PowerShell from the SDK directory:
+Requirements: Git, Docker Desktop with **Linux containers** (WSL 2 backend),
+and a local folder accessible to Docker Desktop. Run in PowerShell:
 
 ```powershell
+git clone https://github.com/wyldtone/wyldtone-plugin-sdk.git
+cd wyldtone-plugin-sdk
 docker compose build sdk
 .\wyldtone.cmd doctor
-.\wyldtone.cmd new MyEffect --template cpp
-.\wyldtone.cmd build MyEffect
-.\wyldtone.cmd validate MyEffect/build/wyldtone/MyEffect.wap
+.\wyldtone.cmd new MyGain --template cpp
+.\wyldtone.cmd build MyGain
+.\wyldtone.cmd validate MyGain/build/wyldtone/MyGain.wap
+.\wyldtone.cmd host render MyGain/build/wyldtone/MyGain.wap --test-tone 110 --duration 2 --rate 48000 --out MyGain/build/wyldtone/demo.wav
 ```
 
-The same `.cmd` launcher works in Windows Command Prompt as `wyldtone.cmd`.
-It delegates to `wyldtone.ps1`, sets Linux-container UID/GID defaults to 1000,
-creates writable cache folders, and preserves the working directory when called
-from an SDK subdirectory. On Windows, you do not use `sudo` or `chmod`.
-The `.cmd` entrypoint runs the bundled script with a **process-scoped** PowerShell
-execution-policy override; it does not change the machine policy. Developers can
-review both small launcher scripts before running them.
+The Windows launcher calls PowerShell with a process-scoped execution-policy
+override, without changing the system policy. Output files remain in the
+local SDK folder. For optional JUCE builds, place a licensed checkout at
+`../JUCE-upstream` (sibling to the SDK directory); see [JUCE guide](docs/juce.md).
 
-If you plan to build JUCE examples, keep a separately licensed JUCE checkout
-in a sibling directory named `JUCE-upstream`, as required by `compose.yaml`.
-Docker Desktop must have access to the Windows drive containing the SDK.
+### Supported and unverified environments
+
+The SDK is continuously tested on **GitHub-hosted Linux x86-64** runners.
+The Windows launcher and Docker Desktop instructions are provided, but
+there is no separate Windows CI runner. macOS, including Apple Silicon
+(arm64), has **not been validated by CI**; platform-specific build issues
+may occur. The JUCE backend is experimental and tested against a specific
+external JUCE revision.
+
+## Where can I run a WAP plugin?
+
+The **public, offline WAP reference host** included in this repository
+can inspect WAPs and process mono/stereo WAV files or generated test tones
+without a sound card. It is a development and interoperability tool, not a
+real-time DAW, live instrument processor or secure service for unknown plugins.
+
+The **actual Wyldtone audio host/engine is proprietary and currently in
+private testing. It is not publicly available yet.** When a public
+host beta becomes available, installation and plugin-loading instructions
+can be linked here. You do **not** need access to that private host to build
+and test plugins with this SDK.
+
+See [developer workflow](docs/developer-workflow.md),
+[offline reference host](docs/reference-host.md), and [WAP format](docs/wap-format.md).
 
 ## Create, inspect, and validate plugins
 

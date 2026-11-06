@@ -105,5 +105,18 @@ jobs:
           python3 scripts/verify_gain_render.py examples/gain/build/wyldtone
           python3 scripts/verify_gain_render.py examples/faust_gain/build/wyldtone
 
+      - name: Onboard a developer - generate, build, validate and render starter plugins
+        run: |
+          mkdir -p .cache/onboarding
+          docker compose run --rm sdk new .cache/onboarding/CiCpp --template cpp
+          docker compose run --rm sdk build .cache/onboarding/CiCpp
+          docker compose run --rm sdk validate .cache/onboarding/CiCpp/build/wyldtone/CiCpp.wap
+          docker compose run --rm sdk host render .cache/onboarding/CiCpp/build/wyldtone/CiCpp.wap --test-tone 110 --duration 0.5 --out .cache/onboarding/CiCpp/build/wyldtone/ci-demo.wav
+
+          docker compose run --rm sdk new .cache/onboarding/CiFaust --template faust
+          docker compose run --rm sdk build .cache/onboarding/CiFaust
+          docker compose run --rm sdk validate .cache/onboarding/CiFaust/build/wyldtone/CiFaust.wap
+          docker compose run --rm sdk host render .cache/onboarding/CiFaust/build/wyldtone/CiFaust.wap --test-tone 110 --duration 0.5 --out .cache/onboarding/CiFaust/build/wyldtone/ci-demo.wav
+
       - name: Show resulting WAP files
         run: find examples -type f -name '*.wap' -print
