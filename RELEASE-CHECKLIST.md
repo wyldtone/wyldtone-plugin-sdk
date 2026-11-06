@@ -16,8 +16,8 @@ temporary modified JUCE sources as part of this beta.
       WAV in the dedicated CI workflow with pinned external JUCE checkout.
 - [x] `cargo test --release --locked --workspace` runs in CI through the
       Docker `sdk test` launcher; latest SDK smoke workflow succeeded.
-- [x] Vanilla C++ `examples/gain` and `examples/faust_gain` compile in
-      CI. **Audio correctness is not yet verified by this build-only check.**
+- [x] Vanilla C++ `examples/gain` and `examples/faust_gain` compile,
+      and both have automated sample-level stereo gain regression tests in CI.
 - [x] SPDX declarations inventoried for 281 external resolved Rust packages:
       276 marked permissive; five reviewed for permissive alternative or
       bzip2 license. See `docs/license-audit-beta.md` and the CI artifact.
@@ -36,8 +36,10 @@ temporary modified JUCE sources as part of this beta.
       `examples/faust_gain` imports no standard library, and this source-only
       release distributes no Faust-generated C++ or compiled Faust WAP.
       See `docs/license-audit-beta.md`.
-- [ ] Render C++ and Faust WAPs in clean CI and check gain and parameter
-      mapping at sample level (not just that the build passes).
+- [x] Clean CI renders both C++ and Faust WAPs at -24 dB, unity and
+      +12 dB; validates float32 stereo WAV data and RMS gain mapping per
+      channel against expected decibel ratios. Verified in SDK smoke workflow
+      run 42205164010.
 - [ ] Finish release artifact/notice review: confirm that the source-only
       archive does not contain generated JUCE files, binaries, or prebuilt
       Docker image; retain third-party notices needed for distributed content.
