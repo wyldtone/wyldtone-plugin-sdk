@@ -26,12 +26,12 @@ case "$1" in
     exec bash "$@"
     ;;
   versions)
-    echo "Emscripten:"; em++ --version | head -n 1
+    echo "Emscripten:"; em++ --version | sed -n '1p'
     echo "Rust:"; rustc --version
     echo "Cargo:"; cargo --version
-    echo "CMake:"; cmake --version | head -n 1
+    echo "CMake:"; cmake --version | sed -n '1p'
     echo "Ninja:"; ninja --version
-    echo "Faust:"; faust -v 2>&1 | head -n 1
+    echo "Faust:"; faust -v 2>&1 | sed -n '1p'
     ;;
   help)
     cat <<'HELP'

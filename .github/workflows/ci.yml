@@ -1,0 +1,78 @@
+name: SDK smoke tests
+
+on:
+  push:
+    branches:
+      - main
+      - 'ci/**'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdk-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sdk-smoke:
+    name: Rust tests and SDK examples (Docker)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out SDK
+        uses: actions/checkout@v4
+
+      - name: Prepare Docker workspace
+        run: |
+          mkdir -p .cache/cargo .cache/target
+          mkdir -p ../JUCE-upstream
+          echo "HOST_UID=$(id -u)" >> "$GITHUB_ENV"
+          echo "HOST_GID=$(id -g)" >> "$GITHUB_ENV"
+
+      # Both paths are mounted by compose.yaml into the SDK container.
+      # Restore partial caches after a lockfile change; Cargo still validates
+      # fingerprints and recompiles anything that is no longer compatible.
+      - name: Restore Cargo downloads and build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache/cargo
+            .cache/target
+          key: cargo-linux-amd64-rust1.99.1-emsdk6.0.13-${{ hashFiles('Cargo.lock', 'docker/Dockerfile', 'compose.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            cargo-linux-amd64-rust1.99.1-emsdk6.0.13-${{ hashFiles('Cargo.lock', 'docker/Dockerfile', 'compose.yaml') }}-
+            cargo-linux-amd64-rust1.99.1-emsdk6.0.13-
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Buildx's GitHub Actions cache preserves Docker layers between runners.
+      # --load makes this local image available to docker compose run.
+      - name: Build pinned SDK toolchain image (cached)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: false
+          load: true
+          tags: wyldtone/plugin-sdk:local
+          cache-from: type=gha,scope=wyldtone-sdk
+          cache-to: type=gha,mode=max,scope=wyldtone-sdk
+
+      - name: Verify toolchain versions
+        run: docker compose run --rm sdk versions
+
+      - name: Run Rust workspace tests
+        run: docker compose run --rm sdk test
+
+      - name: Build vanilla C++ example
+        run: docker compose run --rm sdk build examples/gain/plugin.config.json
+
+      - name: Build Faust example
+        run: docker compose run --rm sdk build examples/faust_gain/plugin.config.json
+
+      - name: Show resulting WAP files
+        run: find examples -type f -name '*.wap' -print
