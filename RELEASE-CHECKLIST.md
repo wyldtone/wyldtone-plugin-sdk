@@ -1,34 +1,67 @@
-# Public-release readiness checklist
+# Public beta readiness — source-only Wyldtone Plugin SDK
 
-## Completed in this staging copy
+Scope: publish original SDK source, adapters, templates, examples, Dockerfile
+and documentation under the applicable license. **Do not distribute** a
+prebuilt Docker toolchain image, JUCE checkout, JUCE-linked WAP files or
+temporary modified JUCE sources as part of this beta.
 
-- [x] No `target/`, build caches, WAP binaries, WAVE files or private plugin fixtures.
-- [x] Removed migration snapshots and historical JUCE source patch.
-- [x] Kept JUCE framework external; bridge renamed from `legacy` to `bridge`.
-- [x] Added minimal offline WAP host (WAV input or sine → processed WAV).
-- [x] Replaced outdated main, architecture and JUCE documentation.
-- [x] Added Apache 2.0 license proposal, notices, JUCE licensing and security docs.
-- [x] Removed private fixture assumptions from basic configuration inventory.
+## Verified in repository and GitHub Actions
 
-## Blocking steps requiring owner / build-host verification
+- [x] Public tree excludes target/build caches, private plugin fixtures,
+      generated JUCE sources and prebuilt WAP/WAV binaries.
+- [x] JUCE framework is obtained separately; source overlap in
+      `ColourCompat.cpp` was replaced and reviewed against the public
+      baseline. No JUCE-linked binaries are published.
+- [x] Original JUCE gain example builds, is inspected and renders a non-silent
+      WAV in the dedicated CI workflow with pinned external JUCE checkout.
+- [x] `cargo test --release --locked --workspace` runs in CI through the
+      Docker `sdk test` launcher; latest SDK smoke workflow succeeded.
+- [x] Vanilla C++ `examples/gain` and `examples/faust_gain` compile in
+      CI. **Audio correctness is not yet verified by this build-only check.**
+- [x] SPDX declarations inventoried for 281 external resolved Rust packages:
+      276 marked permissive; five reviewed for permissive alternative or
+      bzip2 license. See `docs/license-audit-beta.md` and the CI artifact.
+- [x] Source-level focused code review performed, findings documented and
+      manifest-read/pointer guard fixes incorporated in PR #3. See
+      `docs/code-review-beta.md`.
+- [x] Personal copyright notice identifies Dominik Rogosch, scoped to original
+      SDK material for which he holds rights; independent third-party notices
+      are preserved and not relicensed.
 
-- [ ] Confirm the releasing entity owns/can license **every** adapter, Rust
-      crate, Faust example and migrated engine-derived source file under Apache 2.0.
-- [ ] Review `ColourCompat.cpp`, `HeadlessEditorCompat.h`, VFS transform context,
-      and third-party contributions for close copying / compatibility issues.
-- [ ] Verify external JUCE's actual checkout, version and licensing;
-      confirm no JUCE source gets committed in generated folders.
-- [ ] Run `cargo test --release --locked --workspace` in a clean Docker checkout.
-- [ ] Build and render examples/gain; verify sample-level gain correctness.
-- [ ] Build and render examples/faust_gain; check parameter mapping.
-- [ ] Build and render examples/juce_gain with external JUCE checkout.
-- [ ] Check Faust compiler/library/architecture licences and source notices.
-- [ ] Generate dependency SBOM and third-party licence report (Rust, Docker,
-      Emscripten, Faust, JUCE) and review it.
-- [ ] Audit security limits before executing *untrusted* marketplace plugins.
-- [ ] Have appropriate open-source license counsel review AGPL/host combination
-      before marketplace/public commercial distribution.
-- [ ] Replace proposed ownership lines in NOTICE with approved legal owner.
+## Remaining before beta publication
 
-This package is a **foundation for publication**, not a claim that all checks
-have passed. No proprietary engine source is included.
+- [ ] Confirm applicable license notices and copyright for Faust compiler
+      architecture / standard-library material actually used by
+      `examples/faust_gain` and the output produced by this build path.
+- [ ] Render C++ and Faust WAPs in clean CI and check gain and parameter
+      mapping at sample level (not just that the build passes).
+- [ ] Finish release artifact/notice review: confirm that the source-only
+      archive does not contain generated JUCE files, binaries, or prebuilt
+      Docker image; retain third-party notices needed for distributed content.
+- [ ] Review PR #3, merge it to `main`, confirm required workflows succeed
+      on release revision, and publish/tag the chosen beta version.
+
+## Confirmed release-owner conditions (not automation assertions)
+
+- Dominik Rogosch is the initial personal publisher and states he is the sole
+  creator of Wyldtone. The Apache-2.0 grant applies only to code he has the
+  rights to distribute; AI assistance does not itself prove provenance or
+  dispose of rights in possible external fragments.
+
+## Separate milestone: marketplace / untrusted plugins / commercial distribution
+
+- [ ] Harden execution of untrusted plugins with time/memory budgets and
+      isolated processes; improve runtime trap/ABI error handling.
+- [ ] Audit canonical WAP ZIP contents, duplicates and signatures before
+      server-side marketplace inspection or acceptance of untrusted uploads.
+- [ ] Obtain appropriately scoped advice about JUCE AGPL/commercial licensing
+      and the proprietary host/marketplace model before relevant distribution.
+- [ ] Produce a comprehensive system-package / container-image SBOM and
+      licensing/notice bundle if the SDK Docker image is redistributed.
+- [ ] Implement and review any optional commercial licensing/DRM components
+      before enabling those features.
+
+The GitHub Action's JUCE test is ephemeral: it fetches JUCE independently,
+builds only for regression testing and uploads no JUCE binary artifact.
+This checklist records engineering verification, not a definitive legal
+ownership opinion or security certification.
