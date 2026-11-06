@@ -40,9 +40,14 @@ temporary modified JUCE sources as part of this beta.
       +12 dB; validates float32 stereo WAV data and RMS gain mapping per
       channel against expected decibel ratios. Verified in SDK smoke workflow
       run 42205164010.
-- [ ] Finish release artifact/notice review: confirm that the source-only
-      archive does not contain generated JUCE files, binaries, or prebuilt
-      Docker image; retain third-party notices needed for distributed content.
+- [x] Inspected Git-tracked beta source inventory, available main
+      commit history, current GitHub Releases and representative workflow
+      artifacts. No generated JUCE/Faust/WAP binaries, vendored JUCE sources,
+      or published Docker images in the inspected source tree/release assets.
+      Added CI index guard and extended ignores. See
+      `docs/release-inventory-audit.md`. **Owner should explicitly confirm
+      that the full bass synth/YIN and loop-freeze example sources are intended
+      to remain public**; these are intentionally tracked examples, not builds.
 - [ ] Review PR #3, merge it to `main`, confirm required workflows succeed
       on release revision, and publish/tag the chosen beta version.
 
