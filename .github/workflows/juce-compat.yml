@@ -45,6 +45,13 @@ jobs:
       # JUCE source files as workflow artifacts, caches or GitHub releases.
       - name: Build JUCE example WAP
         run: docker compose run --rm sdk build examples/juce_gain/plugin.config.json
+      - name: Generate, build and validate a fresh JUCE starter plugin
+        run: |
+          mkdir -p .cache/onboarding
+          docker compose run --rm sdk new .cache/onboarding/CiJuce --template juce
+          docker compose run --rm sdk build .cache/onboarding/CiJuce
+          docker compose run --rm sdk validate .cache/onboarding/CiJuce/build/wyldtone/CiJuce.wap
+
       - name: Inspect produced WAP
         run: |
           find examples/juce_gain/build/wyldtone -type f -name '*.wap' -print
