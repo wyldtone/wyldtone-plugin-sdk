@@ -20,7 +20,7 @@
 - `.gitignore`, `.dockerignore`, `compose.yaml`, Dockerfile and reference
   host/example package tests were inspected.
 
-## Source-code items intentionally present (owner should confirm scope)
+## Source-code examples intentionally included (owner confirmed)
 
 This repo includes **more than the three basic gain examples**. In particular:
 
@@ -34,9 +34,11 @@ This repo includes **more than the three basic gain examples**. In particular:
   example sources.
 
 These are **source files**, not accidentally published build outputs.
-However, they are publicly accessible in current `main` and earlier history.
-If any contain algorithms the owner intends to keep proprietary, removing
-them from a future release would **not** revoke access to prior commits.
+Dominik Rogosch confirmed that the bass synth/YIN, loop-freeze, and other
+included effect examples should remain publicly available as SDK examples.
+They are already accessible in `main` and earlier history. Their inclusion
+is an intentional source-publication decision, not a claim that algorithms
+or source ownership of independently copyrighted third-party code is waived.
 
 ## Preventive controls introduced in PR #3
 
