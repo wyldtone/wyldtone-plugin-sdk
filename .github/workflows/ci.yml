@@ -74,5 +74,26 @@ jobs:
       - name: Build Faust example
         run: docker compose run --rm sdk build examples/faust_gain/plugin.config.json
 
+      - name: Render C++ and Faust gain examples at multiple gain settings
+        run: |
+          # Normalized parameter values map to -24 / 0 / +12 dB.
+          # C++ range [-24,+24] => 0 / 0.5 / 0.75
+          # Faust range [-24,+12] => 0 / (24/36) / 1.
+          cpp_wap=examples/gain/build/wyldtone/SDK-Gain-Example.wap
+          faust_wap=examples/faust_gain/build/wyldtone/Faust-Stereo-Gain.wap
+
+          docker compose run --rm sdk host render "$cpp_wap" --test-tone 110 --duration 1 --rate 48000 --param gain=0 --out examples/gain/build/wyldtone/ci-low.wav
+          docker compose run --rm sdk host render "$cpp_wap" --test-tone 110 --duration 1 --rate 48000 --param gain=0.5 --out examples/gain/build/wyldtone/ci-unity.wav
+          docker compose run --rm sdk host render "$cpp_wap" --test-tone 110 --duration 1 --rate 48000 --param gain=0.75 --out examples/gain/build/wyldtone/ci-high.wav
+
+          docker compose run --rm sdk host render "$faust_wap" --test-tone 110 --duration 1 --rate 48000 --param gain=0 --out examples/faust_gain/build/wyldtone/ci-low.wav
+          docker compose run --rm sdk host render "$faust_wap" --test-tone 110 --duration 1 --rate 48000 --param gain=0.6666667 --out examples/faust_gain/build/wyldtone/ci-unity.wav
+          docker compose run --rm sdk host render "$faust_wap" --test-tone 110 --duration 1 --rate 48000 --param gain=1 --out examples/faust_gain/build/wyldtone/ci-high.wav
+
+      - name: Verify sample-level stereo gain and parameter mapping
+        run: |
+          python3 scripts/verify_gain_render.py examples/gain/build/wyldtone
+          python3 scripts/verify_gain_render.py examples/faust_gain/build/wyldtone
+
       - name: Show resulting WAP files
         run: find examples -type f -name '*.wap' -print
