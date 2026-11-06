@@ -28,3 +28,12 @@ non-real-time rendering reference.
 The SDK runtime is currently the reference for compatibility. The public API
 must be versioned before declaring a long-term binary-compatibility guarantee.
 Extensions should add optional exports or negotiate explicit ABI revisions.
+
+## Future signing and licensing (proposal only)
+
+Publisher integrity signatures and independently signed license grants are
+being designed as **optional**, backwards-compatible extensions. The intended
+license validation runs inside the plugin, including with third-party hosts;
+no license ABI or DRM enforcement is implemented in this SDK yet. See
+[licensing and signatures](licensing-and-signatures.md) for the provisional
+schema, trust boundaries and open design decisions.
