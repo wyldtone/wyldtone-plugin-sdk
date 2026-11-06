@@ -30,9 +30,12 @@ temporary modified JUCE sources as part of this beta.
 
 ## Remaining before beta publication
 
-- [ ] Confirm applicable license notices and copyright for Faust compiler
-      architecture / standard-library material actually used by
-      `examples/faust_gain` and the output produced by this build path.
+- [x] Reviewed Faust's exact architecture header licenses
+      (`dsp.h`, `UI.h`, `meta.h`): GRAME copyright, LGPL-2.1-or-later
+      with special exception for unchanged architecture sections.
+      `examples/faust_gain` imports no standard library, and this source-only
+      release distributes no Faust-generated C++ or compiled Faust WAP.
+      See `docs/license-audit-beta.md`.
 - [ ] Render C++ and Faust WAPs in clean CI and check gain and parameter
       mapping at sample level (not just that the build passes).
 - [ ] Finish release artifact/notice review: confirm that the source-only
