@@ -19,5 +19,7 @@ mounted read-only at `/opt/juce` if it exists. The image doesn't redistribute
 JUCE and the engine is not part of this repository.
 
 On shared machines limit build jobs and container resources; the included
-Compose file defaults to one CPU and 8 GiB RAM. The `host` subcommand is an
+Compose currently specifies a PID limit and drops Linux capabilities,
+but it does **not** impose a CPU or memory quota. Limit CPU/memory
+explicitly if needed on shared build machines. The `host` subcommand is an
 offline local test tool, not a hardened marketplace-execution sandbox.
