@@ -32,6 +32,9 @@ jobs:
           tags: wyldtone/plugin-sdk:local
           cache-from: type=gha,scope=wyldtone-sdk
           cache-to: type=gha,mode=max,scope=wyldtone-sdk
+      # JUCE is checked out solely for ephemeral CI compilation and testing.
+      # Do NOT upload generated JUCE-linked WAP binaries or temporary modified
+      # JUCE source files as workflow artifacts, caches or GitHub releases.
       - name: Build JUCE example WAP
         run: docker compose run --rm sdk build examples/juce_gain/plugin.config.json
       - name: Inspect produced WAP
