@@ -96,19 +96,48 @@ separate product decisions. Offline clients cannot guarantee immediate
 revocation. Avoid network I/O or heavy signature verification on the real-time
 audio thread.
 
-## Third-party hosts and ABI evolution
+## Third-party hosts and optional license ABI v1
 
-A future host/plugin capability MAY expose a **versioned, optional, bounded**
-license-byte exchange, callable during plugin initialization or a non-audio
-lifecycle phase. The plugin verifies and interprets the license locally. A
-host need only transport the bytes and need not know license issuer secrets.
+The **proposed optional ABI has now been defined** in
+[`abi/include/wasm_plugin.h`](../abi/include/wasm_plugin.h).
+It uses four **optional WASM exports** rather than mandatory host imports,
+so existing WAPs can continue to instantiate in existing hosts.
 
-A plugin that requires licensing needs a defined behavior for hosts without
-that capability (e.g. demo mode or refusing activation). Older plugins and
-hosts must continue operating without this interface. The precise function
-names, memory ownership, error codes, threading rules, update notifications,
-and maximum payload sizes remain **undecided** and are not reserved in
-`abi/include/wasm_plugin.h` yet.
+A licensing-aware plugin exports all four functions:
+- `plugin_license_abi_version()` returns `1`;
+- `plugin_license_requested()` returns `1` when it wants the host to
+  provide the signed license bytes;
+- `plugin_license_prepare_load(size)` reserves a buffer in WASM memory;
+- `plugin_license_commit_load(size)` tells the plugin that the bytes are
+  ready to validate.
+
+The plugin can also request delivery by setting
+`WASM_PLUGIN_EVENT_LICENSE_REQUESTED` (`0x04`) in the existing optional
+pending-events bitmask. The host must **never** poll or deliver on the
+real-time audio thread. Transfer is limited to **65,536 bytes** and the
+host must bounds-check all WASM memory access.
+
+For the intended single-file installation, a future Marketplace may embed
+`license.jwt` in the WAP ZIP **after** publisher signing. The signature
+envelope must explicitly exclude this one mutable license entry, while
+authenticating all other allowed static files. A license-aware host extracts
+these bytes, passes them through the ABI only when requested, and does not
+decide whether the grant is valid. The plugin verifies the license signature
+and entitlement itself. The license bytes must be cryptographically bound
+to the specific plugin identity to prevent interchange.
+
+Absence of the ABI means an **older/unlicensed plugin**, not an error.
+Incomplete exports from a plugin that attempts to implement this ABI are
+invalid. An older host is not required to provide licenses; a licensed
+plugin must decide how to handle that (demo mode, refuse activation, etc.).
+
+**Implementation status:** The ABI declarations and protocol are now
+documented but the SDK runtime, WAP packager, reference host, compiler
+adapters and plugin implementations are **not yet wired up to use them**.
+The ABI has not been integration-tested, and no license verification
+library is shipped. Thus the current beta keeps working exactly as before.
+Host-side integration and an ABI test fixture must precede declaring the
+extension stable.
 
 ## Security boundary and realistic expectations
 
