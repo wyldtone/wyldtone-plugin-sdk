@@ -1,4 +1,4 @@
-# Faust -> Wyldtone WASM plugins (first integration)
+# Faust -> Wyldtone WASM plugins
 
 The third SDK backend compiles `.dsp` code with Faust's C++ backend, embeds the
 produced DSP class into a Wyldtone C++ ABI wrapper, then uses the **existing**
@@ -7,7 +7,7 @@ Neither the audio engine nor the WAP format needs to change.
 
 ## Quick start on the Debian build host
 
-After applying the update (paths in the ZIP are relative to the SDK root):
+From a checkout of the SDK repository:
 
 ```bash
 sudo docker compose build sdk                 # Faust is installed in the Docker image
@@ -113,6 +113,9 @@ architecture material, and any bundled third-party source must be checked
 before redistributing a plugin. See the Faust documentation FAQ on generated
 code licensing. <https://faustdoc.grame.fr/manual/faq/>
 
-This first version has been **statically reviewed and the C++ bridge syntax
-checked against a mock Faust DSP**. It has not been built end-to-end with
-`faust` and `em++` on the user's `wyserver` yet. That integration test is needed.
+The `faust_gain` example is built end-to-end in the SDK GitHub Actions CI with
+Faust and Emscripten, then processed by the offline WAP reference host.
+The automated audio test compares stereo sample-level RMS at -24 dB, 0 dB and
++12 dB, including the generated parameter ID. This validates the reference
+example in CI, **not** every Faust plugin or an end-to-end deployment on an
+individual developer's server.
