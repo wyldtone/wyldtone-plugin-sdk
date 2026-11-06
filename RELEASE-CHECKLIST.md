@@ -28,7 +28,7 @@ temporary modified JUCE sources as part of this beta.
       SDK material for which he holds rights; independent third-party notices
       are preserved and not relicensed.
 
-## Remaining before beta publication
+## Beta-release checks
 
 - [x] Reviewed Faust's exact architecture header licenses
       (`dsp.h`, `UI.h`, `meta.h`): GRAME copyright, LGPL-2.1-or-later
@@ -45,9 +45,9 @@ temporary modified JUCE sources as part of this beta.
       artifacts. No generated JUCE/Faust/WAP binaries, vendored JUCE sources,
       or published Docker images in the inspected source tree/release assets.
       Added CI index guard and extended ignores. See
-      `docs/release-inventory-audit.md`. **Owner should explicitly confirm
-      that the full bass synth/YIN and loop-freeze example sources are intended
-      to remain public**; these are intentionally tracked examples, not builds.
+      `docs/release-inventory-audit.md`. **Owner confirmed that the full bass synth/YIN, loop-freeze and other
+      effect examples are intentionally public under the SDK's applicable
+      licenses**; these are tracked source examples, not generated builds.
 - [ ] Review PR #3, merge it to `main`, confirm required workflows succeed
       on release revision, and publish/tag the chosen beta version.
 
