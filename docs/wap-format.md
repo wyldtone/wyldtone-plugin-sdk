@@ -37,3 +37,12 @@ license validation runs inside the plugin, including with third-party hosts;
 no license ABI or DRM enforcement is implemented in this SDK yet. See
 [licensing and signatures](licensing-and-signatures.md) for the provisional
 schema, trust boundaries and open design decisions.
+
+### Optional license transfer ABI (proposal v1)
+
+`abi/include/wasm_plugin.h` now declares four optional `plugin_license_*`
+exports and a `WASM_PLUGIN_EVENT_LICENSE_REQUESTED` event flag. A compatible
+host can deliver an embedded, separately signed license from the WAP when the
+plugin requests it. Existing plugins and hosts do not require this extension.
+The protocol is specified in [licensing and signatures](licensing-and-signatures.md),
+but no host/packager runtime support is implemented or tested yet.
