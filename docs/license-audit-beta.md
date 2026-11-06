@@ -45,6 +45,39 @@ have been satisfied.
 | Debian packages, Rust toolchain, shell/CLI tools, image layers | SDK Docker image | Not covered by `Cargo.lock`; need a container/package-level inventory before **redistributing** the image |
 | Optional third-party JUCE modules / developer supplied dependencies | Developer-provided source | Not part of this repository's dependency inventory; developers must license them separately |
 
+
+## JUCE source-to-source comparison (baseline `7aae7d8e8`)
+
+Compared the SDK sources on `main` against the public
+[`juce-framework/JUCE` revision `7aae7d8e8`](https://github.com/juce-framework/JUCE/tree/7aae7d8e8).
+
+| SDK file / technique | JUCE comparison | Release significance |
+|---|---|---|
+| `adapters/juce/headless/ColourCompat.cpp` | **The `Colour(uint32)` constructor body is functionally and textually nearly identical** to JUCE's `modules/juce_graphics/colour/juce_Colour.cpp`: same channel extraction expressions, same component order and `argb` initialization. SDK uses different argument identifiers. | **Needs action before Apache-only release.** Short commonplace ARGB arithmetic may not independently be protectable, but do not confidently claim independent implementation while directly mirroring JUCE source. Prefer removing this shim if the supported example works without it; otherwise replace with demonstrably independently authored implementation or obtain a specific right/licensing determination. |
+| `adapters/juce/bridge/HeadlessEditorCompat.h` | JUCE declares real `AudioProcessorEditor` (derived from `Component`) and `GenericAudioProcessorEditor` in its `juce_audio_processors/processors` headers. SDK substitutes tiny no-op classes with compatible names and a trivial constructor, **not copies of the original class bodies or functionality**. | No substantial copied implementation identified; this is a compatibility shim, but its provenance remains for the maintainer to attest. Be cautious: name/class compatibility does not make the actual JUCE graphics API supported. |
+| `adapters/juce/bridge/WasmPlatformCompat.cpp` | Implements three JUCE-declared methods with no-op/`false` WASM stubs. JUCE has OS-specific thread/message dispatch implementations; these tiny WASM bodies are distinct from upstream platform implementations. | No copied JUCE implementation identified. |
+| `adapters/juce/bridge/HeadlessAPVTS.cpp` | Includes JUCE's `juce_AudioProcessorValueTreeState.cpp` by path in **the developer's own JUCE checkout**; no JUCE implementation text is embedded in the SDK copy. | Source-only SDK does not redistribute that file. The developer's compiled WAP may incorporate JUCE, under their JUCE license obligations. |
+| `adapters/juce/build/CMakeLists.txt` VFS transform | Reads four upstream files from the developer's checkout, adds small guarded WASM conditional changes in temporary local copies, and overlays compilation paths. Baseline source anchors are present in the upstream revision. | The Git-tracked SDK contains patch **instructions**, not copied JUCE files. Generated derivatives retain JUCE license rights and must not be published as Apache-only SDK files. A bundled prebuilt JUCE WAP would need separate review. |
+| `examples/juce_gain/PluginProcessor.cpp/.h` | Small gain processor using the JUCE public API; no substantial upstream source code identified in this spot check. | Compatible with a source-only Apache release **conditional on original authorship and rights**. Do not bundle the built JUCE WAP. |
+
+**Key distinction:** This is a textual and architectural comparison of the
+identified compatibility paths, **not a legal originality determination**.
+API compatibility alone is not copying an implementation, but minimal code
+similarity (especially the `Colour` constructor) warrants documenting or
+removing the overlap before asserting exclusive Apache-2.0 licensing.
+
+### Personal release owner and future corporate ownership
+
+The releasing maintainer states that **they will personally publish the SDK**
+for the initial beta; no GmbH currently needs to be named as publisher.
+The `NOTICE` must carry the legal name of the **actual copyright holder(s)**,
+based on existing rights and contributor agreements; GitHub-account identity
+alone does not establish legal title. If a GmbH is later formed, a separate
+written rights transfer or license, plus an updated notice for subsequent
+versions, may be appropriate. Changing a notice does **not** by itself transfer
+copyright, and historical Apache-2.0 grants already made cannot simply be
+withdrawn retroactively.
+
 ## Repository-specific items still blocking public release
 
 1. Confirm rights/provenance for original and engine-derived SDK source and
