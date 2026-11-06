@@ -1,6 +1,6 @@
 # Wyldtone Bass Synth v0.4 - YIN string-switch reacquisition
 
-An original, **monophonic** bass-controlled synth built with a C++ YIN tracker and a Faust synthesis engine. The update targets a common bass-playing case: a lower string keeps ringing while the player plucks a higher string. It is not polyphonic pitch tracking and is not an emulation of a particular commercial pedal.
+An original, **monophonic** bass-controlled synth built with a C++ YIN tracker and a Faust synthesis engine. The tracker targets a common bass-playing case: a lower string keeps ringing while the player plucks a higher string. It is not polyphonic pitch tracking and is not an emulation of a particular commercial pedal.
 
 ## Build from a fresh SDK checkout
 
@@ -30,7 +30,7 @@ The C++ detector now has **two complementary analysis paths**:
 1. **Normal YIN:** Follows the fundamental of a single bass note with the existing 6 kHz, low-pass-filtered analysis stream.
 2. **New-onset/reacquisition path:** Compares the input with a copy delayed by one period of the *previously accepted* bass note. A stable old note mostly cancels out. A newly plucked string remains in this *novelty/residual signal*; a second, shorter YIN analysis estimates its pitch. It is accepted only after consecutive consistent high-confidence estimates. The original note is retained if a replacement cannot be verified.
 
-Once a new note is acquired, the accepted pitch is temporarily protected against falling back to the stronger, still-ringing old note. This protection can also delay intentional pitch bends or slides. The prior gate-release reset after silence remains in place. Neither the Faust adapter nor the externally visible stereo (2-in/2-out) ABI has changed.
+Once a new note is acquired, the accepted pitch is temporarily protected against falling back to the stronger, still-ringing old note. This protection can also delay intentional pitch bends or slides. The tracker resets after a period of silence. The example uses the SDK's stereo (2-in/2-out) ABI.
 
 This is **not** complete multi-pitch detection. It targets a new pluck over a ringing previous note, and it cannot reliably separate chords, fast repeated plucks with dense overlap, or notes whose harmonic content strongly overlaps.
 
@@ -71,7 +71,7 @@ The included native regression suite covers these three CTest cases. On generate
 - **Rapid repeated legato transitions** (especially several plucks <200-250 ms apart with multiple strings still ringing) may not be detected reliably. Muting unused strings still helps.
 - **Slides/bends:** after accepting a plucked note, a temporary protection interval (~450 ms) avoids dropping back to a loud old string. During that interval large bends or slides without a new pluck can lag.
 - **Intrinsic detection time:** YIN needs adequate history. The `Tracking Response` slider does not eliminate the analysis-window delay.
-- **No realtime guarantees from native tests:** the target Faust/Emscripten WASM build, AudioGraph audio stability, and CPU budget must be verified on the user's host.
+- **No real-time guarantees from native tests:** measure the target Faust/Emscripten WASM build, audio stability, and CPU budget in each intended real-time host. The proprietary Wyldtone host is not public.
 - This is not a transient-based granular resynthesizer, nor a multi-voice synth. True polyphony would require multi-pitch estimation and separate voice management.
 
 For comparisons, use identical input recordings and check the reported tracking latency.
