@@ -1,0 +1,64 @@
+name: JUCE adapter compatibility (external checkout)
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  juce-example:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch public JUCE baseline separately (not bundled)
+        run: |
+          mkdir -p .cache/cargo .cache/target ../JUCE-upstream
+          git -C ../JUCE-upstream init
+          git -C ../JUCE-upstream remote add origin https://github.com/juce-framework/JUCE.git
+          git -C ../JUCE-upstream fetch --depth 1 origin 7aae7d8e8deb8413bb01633d2795ef9974a181c5
+          git -C ../JUCE-upstream checkout --detach FETCH_HEAD
+          echo "HOST_UID=$(id -u)" >> "$GITHUB_ENV"
+          echo "HOST_GID=$(id -g)" >> "$GITHUB_ENV"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: false
+          load: true
+          tags: wyldtone/plugin-sdk:local
+          cache-from: type=gha,scope=wyldtone-sdk
+          cache-to: type=gha,mode=max,scope=wyldtone-sdk
+      - name: Build JUCE example WAP
+        run: docker compose run --rm sdk build examples/juce_gain/plugin.config.json
+      - name: Inspect produced WAP
+        run: |
+          find examples/juce_gain/build/wyldtone -type f -name '*.wap' -print
+          docker compose run --rm sdk inspect examples/juce_gain/build/wyldtone/JUCE-Gain-Example.wap
+      - name: Offline render JUCE WAP
+        run: |
+          docker compose run --rm sdk host render examples/juce_gain/build/wyldtone/JUCE-Gain-Example.wap --test-tone 110 --duration 1 --rate 48000 --out examples/juce_gain/build/wyldtone/smoke.wav
+          python3 - <<'PY'
+          import pathlib,struct
+          path=pathlib.Path("examples/juce_gain/build/wyldtone/smoke.wav")
+          data=path.read_bytes()
+          assert data[:4]==b"RIFF" and data[8:12]==b"WAVE", "Not a WAV file"
+          offset=12
+          samples=None
+          while offset+8<=len(data):
+              tag,size=struct.unpack_from("<4sI",data,offset)
+              offset+=8
+              if tag==b"data":
+                  assert size>=4096, f"Audio unexpectedly short: {size} bytes"
+                  n=min(size//4,2048)
+                  values=struct.unpack_from("<"+str(n)+"f",data,offset)
+                  assert any(abs(v)>1e-5 for v in values), "Rendered JUCE example is silent"
+                  samples=n
+                  break
+              offset+=size+(size&1)
+          assert samples, "Missing WAV audio data"
+          print(f"Rendered audio OK, inspected {samples} non-silent float32 samples")
+          PY
