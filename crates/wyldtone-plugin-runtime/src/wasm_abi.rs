@@ -854,6 +854,9 @@ impl WasmPlugin {
 
         let buffer_ptr =
             self.buffer_ptr;
+        if buffer_ptr < 0 {
+            return Err("WASM plugin returned a negative string buffer pointer".into());
+        }
 
         let required =
             buffer_ptr
@@ -932,6 +935,9 @@ impl WasmPlugin {
 
         let buffer_ptr =
             self.buffer_ptr;
+        if buffer_ptr < 0 {
+            return Err("WASM plugin returned a negative choice buffer pointer".into());
+        }
 
         let required =
             buffer_ptr
@@ -1001,6 +1007,9 @@ impl WasmPlugin {
 
         let buffer_ptr =
             self.buffer_ptr;
+        if buffer_ptr < 0 {
+            return Err("WASM plugin returned a negative name buffer pointer".into());
+        }
 
         let required =
             buffer_ptr
@@ -1483,6 +1492,7 @@ impl WasmPlugin {
             Some(bytes) => bytes,
             None => return false,
         };
+        if self.buffer_ptr < 0 { return false; }
         let offset = self.buffer_ptr as usize;
         let end = match offset.checked_add(bytes) {
             Some(end) => end,
@@ -1521,6 +1531,7 @@ impl WasmPlugin {
                 None => return,
             };
 
+        if self.buffer_ptr < 0 { return (); }
         let offset =
             self.buffer_ptr as usize;
 

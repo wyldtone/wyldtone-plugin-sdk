@@ -1,14 +1,11 @@
-// Wyldtone SDK - minimal JUCE Colour compatibility for headless WASM.
+// Wyldtone SDK: headless WebAssembly adapter for JUCE's declared Colour API.
 //
-// JUCE's juce_audio_processors_headless deliberately avoids linking
-// juce_graphics. Some third-party processors nevertheless instantiate
-// juce::Colour constants in non-editor translation units.
+// This is an independently authored, minimal constructor shim. It uses the
+// public PixelARGB setter instead of carrying over the JUCE Colour.cpp
+// constructor implementation. The real juce_graphics implementation MUST NOT
+// be linked alongside this shim.
 //
-// Supply ONLY the ARGB constructor required by these constants. This is
-// not a substitute for juce_graphics, and must not be linked together with
-// the actual juce_graphics implementation of Colour.
-//
-// This file is SDK-owned. The developer's JUCE checkout remains untouched.
+// No JUCE source files are vendored or redistributed by this file.
 #include <juce_graphics/juce_graphics.h>
 
 #if ! JUCE_WASM
@@ -17,11 +14,24 @@
 
 namespace juce
 {
-Colour::Colour (uint32 argbValue) noexcept
-    : argb (static_cast<uint8> ((argbValue >> 24) & 0xff),
-            static_cast<uint8> ((argbValue >> 16) & 0xff),
-            static_cast<uint8> ((argbValue >> 8) & 0xff),
-            static_cast<uint8> (argbValue & 0xff))
+Colour::Colour (uint32 packedColour) noexcept
 {
+    constexpr uint32 componentMask = 255u;
+    constexpr uint32 redOffset = 16u;
+    constexpr uint32 greenOffset = 8u;
+    constexpr uint32 alphaOffset = 24u;
+
+    // The ARGB byte layout is part of the published Colour(uint32) API.
+    // Use PixelARGB's public setter to keep this shim independent from
+    // JUCE's implementation of Colour's own constructor.
+    const auto channel = [packedColour] (uint32 offset) noexcept
+    {
+        return static_cast<uint8> ((packedColour >> offset) & componentMask);
+    };
+
+    argb.setARGB (channel (alphaOffset),
+                  channel (redOffset),
+                  channel (greenOffset),
+                  channel (0u));
 }
 } // namespace juce

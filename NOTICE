@@ -1,9 +1,19 @@
-Wyldtone Plugin SDK - proposed public beta (2026)
+Wyldtone Plugin SDK
+Copyright 2026 Dominik Rogosch
 
-The SDK's original Wyldtone-authored source code is intended to be released
-under the Apache License, Version 2.0, subject to confirmation that the releasing
-party owns the necessary rights and that all contributed code is cleared.
+The original Wyldtone Plugin SDK source code for which Dominik Rogosch
+holds the necessary rights is made available under the Apache License,
+Version 2.0. See LICENSE.
 
-Third-party software is not relicensed by this file. See THIRD-PARTY-NOTICES.md
-and docs/juce-licensing.md. The proprietary Wyldtone audio engine is NOT part
-of this distribution and is NOT covered by this SDK license.
+This notice does not claim ownership of independently copyrighted
+third-party contributions or frameworks. Any such contributions retain
+their original copyright and applicable license notices.
+
+Third-party software is not relicensed by the SDK's Apache-2.0 license.
+The optional JUCE framework is obtained separately by each developer;
+no JUCE framework source, precompiled JUCE-based WAP, or prebuilt SDK
+Docker image is distributed with this source-only SDK release.
+See THIRD-PARTY-NOTICES.md, docs/juce-licensing.md, and
+docs/license-audit-beta.md for distribution boundaries and obligations.
+
+The proprietary Wyldtone audio engine is not included in this SDK.

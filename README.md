@@ -4,8 +4,8 @@ Build standalone `.wap` WebAssembly audio plugins with Vanilla C++, Faust, or
 JUCE. The WAP ABI and manifest are public; the **Wyldtone engine itself is not
 included and remains proprietary**.
 
-This is a *release candidate staging copy*, not a signed, legally approved or
-fully independently build-verified release. Review `RELEASE-CHECKLIST.md` first.
+This is a *public beta candidate*, not a signed or independently legally
+certified release. Review `RELEASE-CHECKLIST.md` before publishing.
 
 ## Quick start (Linux / Docker)
 
@@ -117,8 +117,9 @@ See [reference host](docs/reference-host.md) and [WAP format](docs/wap-format.md
 
 ## Licensing and security
 
-SDK-owned material is **intended** for Apache-2.0 release; the owner must
-confirm provenance and publication rights before publishing. JUCE/AGPL code is
+Original SDK source code for which Dominik Rogosch holds the required rights
+is published under Apache-2.0; independently copyrighted third-party material
+retains its own license and notice requirements. JUCE/AGPL code is
 not sublicensed, and generating a JUCE-based WAP can trigger JUCE license
 obligations. The marketplace and proprietary host's legal position require
 separate review. See [JUCE licensing](docs/juce-licensing.md),
