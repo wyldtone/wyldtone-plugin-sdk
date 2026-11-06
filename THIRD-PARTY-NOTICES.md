@@ -15,8 +15,8 @@ Wasmtime or the original third-party example projects.
 
 - `adapters/juce/bridge/WasmExport.cpp`: WAP export adapter written for the SDK; it invokes JUCE API surface.
 - `adapters/juce/bridge/HeadlessAPVTS.cpp`: thin C++ wrapper that includes JUCE's APVTS implementation **from the developer's installed checkout**. No copied JUCE APVTS `.cpp` is distributed in this repository.
-- `adapters/juce/bridge/WasmPlatformCompat.cpp`: small WASM host stubs; requires API/author-rights review before release.
-- `adapters/juce/bridge/HeadlessEditorCompat.h` and `adapters/juce/headless/ColourCompat.cpp`: narrow SDK-owned compatibility implementations of JUCE-facing class interfaces. Review for implementation/provenance overlap and future JUCE ABI compatibility.
+- `adapters/juce/bridge/WasmPlatformCompat.cpp`: small independently authored WASM host stubs; compared with the public upstream JUCE implementation as recorded in [the beta license audit](docs/license-audit-beta.md).
+- `adapters/juce/bridge/HeadlessEditorCompat.h` and `adapters/juce/headless/ColourCompat.cpp`: narrow SDK-owned compatibility implementations of JUCE-facing class interfaces. The previously close-matching `Colour` constructor was rewritten to use JUCE's public `PixelARGB` setter; see [beta license audit](docs/license-audit-beta.md). Compatibility with future JUCE revisions must still be retested.
 - `adapters/juce/build/CMakeLists.txt`: patches a few externally sourced JUCE files into *temporary build copies* using an LLVM VFS overlay. Those derivative copies are JUCE material and remain local; they are not Apache-licensed SDK source.
 
 Historic JUCE source patches, private test fixtures, and generated JUCE/VFS outputs
