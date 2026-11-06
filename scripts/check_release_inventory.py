@@ -15,7 +15,7 @@ FORBIDDEN_SUFFIXES = {
     ".pem", ".key", ".p12", ".pfx", ".kdbx", ".sqlite", ".sqlite3", ".db",
 }
 FORBIDDEN_PARTS = {
-    "target", "wasm-cache", "build", "__pycache__", ".cache",
+    "target", "wasm-cache", "__pycache__", ".cache",
     "JUCE-upstream", "JUCE", "thirdparty", "migration",
 }
 FORBIDDEN_NAMES = {"id_rsa", "id_ed25519"}
@@ -40,6 +40,10 @@ for relative in files:
         continue
     if any(part in FORBIDDEN_PARTS for part in parts):
         violations.append(f"{relative}: forbidden generated/vendor directory")
+    # The checked-in JUCE CMake adapter lives in adapters/juce/build/.
+    # Every other build/ directory is generated output.
+    if "build" in parts and parts[:3] != ("adapters", "juce", "build"):
+        violations.append(f"{relative}: generated build output")
     if filename in FORBIDDEN_NAMES or filename.startswith(("id_rsa.", "id_ed25519.")):
         violations.append(f"{relative}: private key filename")
     if filename == ".env" or (filename.startswith(".env.") and filename != ".env.example"):
