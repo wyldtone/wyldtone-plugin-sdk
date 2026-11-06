@@ -1,11 +1,13 @@
-# Wyldtone Plugin SDK — public beta candidate
+# Wyldtone Plugin SDK — public beta
 
 Build standalone `.wap` WebAssembly audio plugins with Vanilla C++, Faust, or
 JUCE. The WAP ABI and manifest are public; the **Wyldtone engine itself is not
 included and remains proprietary**.
 
-This is a *public beta candidate*, not a signed or independently legally
-certified release. Review `RELEASE-CHECKLIST.md` before publishing.
+**Beta version:** `0.2.0-beta.1` (source-only). This repository provides the SDK source;
+there are no prebuilt WAPs, Docker images or JUCE framework files in the release.
+The beta is not a security certification or an independent legal assessment.
+See `RELEASE-CHECKLIST.md` for verification and release scope.
 
 ## Quick start (Linux / Docker)
 
@@ -112,7 +114,7 @@ See [reference host](docs/reference-host.md) and [WAP format](docs/wap-format.md
 - `crates/wyldtone-plugin-packager`: WAP packaging
 - `crates/wyldtone-cli`: build, DSP tests and benchmarks
 - `crates/wyldtone-wap-host`: **minimal offline WAP reference host**
-- `adapters/cpp`, `adapters/faust`, `adapters/juce`: build frontends
+- `adapters/faust`, `adapters/juce`: Faust/JUCE build frontends; Vanilla C++ builds are handled by `crates/wyldtone-cli/src/cpp.rs`
 - `examples/`: original plugin examples
 
 ## Licensing and security

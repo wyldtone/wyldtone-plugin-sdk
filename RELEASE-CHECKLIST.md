@@ -48,8 +48,10 @@ temporary modified JUCE sources as part of this beta.
       `docs/release-inventory-audit.md`. **Owner confirmed that the full bass synth/YIN, loop-freeze and other
       effect examples are intentionally public under the SDK's applicable
       licenses**; these are tracked source examples, not generated builds.
-- [ ] Review PR #3, merge it to `main`, confirm required workflows succeed
-      on release revision, and publish/tag the chosen beta version.
+- [x] PR #3 merged into `main`; SDK smoke workflow succeeded on merge commit
+      `52c6623951e839ba0c033a1c729d61eaa74708ad`.
+- [ ] Merge the beta-finalization PR, verify checks on the resulting `main`,
+      then create GitHub prerelease tag `v0.2.0-beta.1` with source-only assets.
 
 ## Confirmed release-owner conditions (not automation assertions)
 

@@ -1,7 +1,7 @@
 # Contributing
 
-Contributions are welcome after the public beta has been verified on a clean
-checkout. Before submitting: `cargo test --release --workspace`, Python unit
+Contributions are welcome for the public source-only beta. The SDK is
+verified through GitHub Actions on clean hosted runners. Before submitting: `cargo test --release --workspace`, Python unit
 tests, and representative Vanilla C++, JUCE (with your own lawful checkout)
 and Faust builds. Add regression cases for ABI changes.
 

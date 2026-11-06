@@ -2545,7 +2545,7 @@ checksum = "3ad82d2a33cdc9674dc7465672f271e096168fcdbe0f799d9e6db8c5892679dc"
 
 [[package]]
 name = "wyldtone-cli"
-version = "0.2.0"
+version = "0.2.0-beta.1"
 dependencies = [
  "serde_json",
  "wyldtone-plugin-api",
@@ -2555,7 +2555,7 @@ dependencies = [
 
 [[package]]
 name = "wyldtone-plugin-api"
-version = "0.2.0"
+version = "0.2.0-beta.1"
 dependencies = [
  "ringbuf",
  "serde",
@@ -2564,7 +2564,7 @@ dependencies = [
 
 [[package]]
 name = "wyldtone-plugin-packager"
-version = "0.2.0"
+version = "0.2.0-beta.1"
 dependencies = [
  "serde_json",
  "wyldtone-plugin-api",
@@ -2573,7 +2573,7 @@ dependencies = [
 
 [[package]]
 name = "wyldtone-plugin-runtime"
-version = "0.2.0"
+version = "0.2.0-beta.1"
 dependencies = [
  "wasmtime",
  "wasmtime-wasi",
@@ -2582,7 +2582,7 @@ dependencies = [
 
 [[package]]
 name = "wyldtone-wap-host"
-version = "0.2.0"
+version = "0.2.0-beta.1"
 dependencies = [
  "wyldtone-plugin-packager",
  "wyldtone-plugin-runtime",
