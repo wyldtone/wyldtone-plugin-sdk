@@ -91,10 +91,68 @@
  */
 #define WASM_PLUGIN_EVENT_STATE_CHANGED 0x02
 
+/* Plugin requests the host to deliver the embedded signed license. The host
+ * handles this on a non-audio thread. Optional license ABI below. */
+#define WASM_PLUGIN_EVENT_LICENSE_REQUESTED 0x04
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+/*
+ * ============================================================================
+ *  Optional host-to-plugin license delivery ABI (v1)
+ * ============================================================================
+ *
+ * This is an OPTIONAL group of FOUR WASM EXPORTS, not a host import.
+ * A plugin which supports it exports all four functions (WASM_PLUGIN_EXPORT).
+ * Older plugins export none. The host checks for all four, and rejects a
+ * partially implemented group instead of guessing a calling convention.
+ *
+ * The license server creates a signed license file; a future WAP packager may
+ * embed that file as a separate, mutable ZIP entry. The host reads the entry,
+ * but DOES NOT authenticate the entitlement for the plugin. It only transports
+ * opaque bytes into the plugin's linear memory. The plugin MUST verify the
+ * signed grant with its own trusted license public key.
+ *
+ * Lifetime:
+ *   - After initialization, the plugin requests delivery by returning 1 from
+ *     plugin_license_requested(), or by raising LICENSE_REQUESTED in
+ *     plugin_pending_events() where supported.
+ *   - At a NON-AUDIO lifecycle point, host calls prepare_load(size), checks
+ *     the returned pointer and memory range, copies exactly size bytes, then
+ *     calls commit_load(size). The plugin verifies/records the grant.
+ *   - If no license is available, host calls prepare_load(0), then
+ *     commit_load(0). This is an explicit "no license" response; the plugin
+ *     decides whether to enter demo mode or refuse activation.
+ *   - A plugin can request delivery again for a renewed/replaced license.
+ *
+ * Limits and return conventions:
+ *   - Max delivery payload: 65,536 bytes. Includes signature and envelope.
+ *   - size is >=0 and <=65536; any other value is invalid.
+ *   - prepare_load(size) returns a strictly positive pointer for size>0;
+ *     zero is permitted only for size==0. Negative means plugin error.
+ *   - commit_load(size) returns 0 if bytes were consumed; negative means
+ *     plugin-reported error. A zero return DOES NOT mean license validity.
+ *   - plugin_license_requested() returns 1 while delivery is requested,
+ *     0 otherwise; negative indicates plugin error.
+ *   - plugin_license_abi_version() returns exactly 1 for this ABI.
+ *
+ * Neither these functions nor cryptographic verification should be called
+ * from the real-time audio thread. The host must not retain the returned
+ * WASM pointer after copying. License bytes are untrusted even when embedded
+ * in a publisher-signed WAP package. Do not persist licenses as plugin state.
+ */
+
+#define WASM_PLUGIN_LICENSE_ABI_VERSION 1
+#define WASM_PLUGIN_MAX_LICENSE_BYTES 65536
+
+int32_t plugin_license_abi_version(void);
+int32_t plugin_license_requested(void);
+int32_t plugin_license_prepare_load(int32_t size);
+int32_t plugin_license_commit_load(int32_t size);
 
 
 /*
