@@ -5,6 +5,7 @@ on:
   # Manual runs remain possible through Actions > Run workflow.
   pull_request:
     paths:
+      - '.github/workflows/juce-compat.yml'
       - 'examples/juce_gain/**'
       - 'adapters/juce/**'
       - 'crates/wyldtone-cli/src/juce.rs'
