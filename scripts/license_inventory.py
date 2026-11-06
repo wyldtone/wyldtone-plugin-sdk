@@ -16,7 +16,7 @@ PERMISSIVE = {
     "Unicode-DFS-2016", "Unicode-3.0", "NCSA", "OFL-1.1",
 }
 REVIEW = {"MPL-2.0", "OpenSSL", "CDLA-Permissive-2.0"}
-LICENSE_PATTERN = re.compile(r"\\b(?:AND|OR|WITH)\\b|[()]|[^\\s()]+")
+LICENSE_PATTERN = re.compile(r"\b(?:AND|OR|WITH)\b|[()]|[^\s()]+")
 
 
 def classify(expr):
@@ -53,12 +53,12 @@ def main():
     packages = sorted(data["packages"], key=lambda p: (p["name"], p["version"]))
     external = [p for p in packages if p.get("source")]
     print(f"Resolved packages: {len(packages)}; external: {len(external)}; workspace: {len(packages)-len(external)}")
-    print("NAME\\tVERSION\\tLICENSE_EXPRESSION\\tLICENSE_FILE\\tCLASSIFICATION")
+    print("NAME\tVERSION\tLICENSE_EXPRESSION\tLICENSE_FILE\tCLASSIFICATION")
     review = []
     for p in external:
         expr = p.get("license") or ""
         status = classify(expr)
-        print("\\t".join((p["name"], p["version"], expr or "(unspecified)", p.get("license_file") or "", status)))
+        print("\t".join((p["name"], p["version"], expr or "(unspecified)", p.get("license_file") or "", status)))
         if status.startswith("REVIEW"):
             review.append((p["name"], p["version"], expr, status))
     print(f"SUMMARY: {len(external)-len(review)} external package declarations permissive; {len(review)} require manual review", file=sys.stderr)
