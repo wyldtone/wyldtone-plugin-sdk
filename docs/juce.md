@@ -19,7 +19,7 @@ docker compose build sdk
 
 On Windows with Docker Desktop, use the same sibling JUCE checkout and
 `docker compose build sdk`, then replace `./wyldtone` with
-`.\\wyldtone.cmd` in the last two commands.
+`.\wyldtone.cmd` in the last two commands.
 
 The container already sets `JUCE_DIR=/opt/juce` and
 `WYLDTONE_JUCE_MODE=upstream`. Setting `JUCE_DIR` in the host shell is
