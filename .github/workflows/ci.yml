@@ -86,9 +86,9 @@ jobs:
           docker compose run --rm sdk host render "$cpp_wap" --test-tone 110 --duration 1 --rate 48000 --param gain=0.5 --out examples/gain/build/wyldtone/ci-unity.wav
           docker compose run --rm sdk host render "$cpp_wap" --test-tone 110 --duration 1 --rate 48000 --param gain=0.75 --out examples/gain/build/wyldtone/ci-high.wav
 
-          docker compose run --rm sdk host render "$faust_wap" --test-tone 110 --duration 1 --rate 48000 --param gain=0 --out examples/faust_gain/build/wyldtone/ci-low.wav
-          docker compose run --rm sdk host render "$faust_wap" --test-tone 110 --duration 1 --rate 48000 --param gain=0.6666667 --out examples/faust_gain/build/wyldtone/ci-unity.wav
-          docker compose run --rm sdk host render "$faust_wap" --test-tone 110 --duration 1 --rate 48000 --param gain=1 --out examples/faust_gain/build/wyldtone/ci-high.wav
+          docker compose run --rm sdk host render "$faust_wap" --test-tone 110 --duration 1 --rate 48000 --param faust_stereo_gain_gain=0 --out examples/faust_gain/build/wyldtone/ci-low.wav
+          docker compose run --rm sdk host render "$faust_wap" --test-tone 110 --duration 1 --rate 48000 --param faust_stereo_gain_gain=0.6666667 --out examples/faust_gain/build/wyldtone/ci-unity.wav
+          docker compose run --rm sdk host render "$faust_wap" --test-tone 110 --duration 1 --rate 48000 --param faust_stereo_gain_gain=1 --out examples/faust_gain/build/wyldtone/ci-high.wav
 
       - name: Verify sample-level stereo gain and parameter mapping
         run: |
