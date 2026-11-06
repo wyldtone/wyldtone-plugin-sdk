@@ -28,3 +28,22 @@ non-real-time rendering reference.
 The SDK runtime is currently the reference for compatibility. The public API
 must be versioned before declaring a long-term binary-compatibility guarantee.
 Extensions should add optional exports or negotiate explicit ABI revisions.
+
+## Future signing and licensing (proposal only)
+
+Publisher integrity signatures and independently signed license grants are
+being designed as **optional**, backwards-compatible extensions. The intended
+license validation runs inside the plugin, including with third-party hosts;
+the optional license ABI is specified but license delivery and DRM enforcement
+are not implemented in the SDK runtime or reference host yet. See
+[licensing and signatures](licensing-and-signatures.md) for the provisional
+schema, trust boundaries and open design decisions.
+
+### Optional license transfer ABI (proposal v1)
+
+`abi/include/wasm_plugin.h` now declares four optional `plugin_license_*`
+exports and a `WASM_PLUGIN_EVENT_LICENSE_REQUESTED` event flag. A compatible
+host can deliver an embedded, separately signed license from the WAP when the
+plugin requests it. Existing plugins and hosts do not require this extension.
+The protocol is specified in [licensing and signatures](licensing-and-signatures.md),
+but no host/packager runtime support is implemented or tested yet.

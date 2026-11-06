@@ -1,9 +1,26 @@
 # Offline WAP reference host
 
-`wap-host` is a minimal public interoperability demonstration: it loads a
-standalone `.wap`, inspects the manifest, processes one mono/stereo audio stream
-with the published ABI, and writes a WAV. It **does not** include the proprietary
-Wyldtone engine or its graph, monitoring, audio-driver, or real-time processing.
+`wap-host` serves **two purposes**: a small offline test tool for plugins
+built with the SDK, **and a reference implementation for third-party host
+developers** who want to load and run WAP plugins in their own applications.
+It demonstrates WAP package loading, manifest inspection, WASM instantiation,
+parameter exchange and audio processing through the public ABI.
+
+The implementation lives in [`crates/wyldtone-wap-host`](../crates/wyldtone-wap-host)
+and uses the shared [public WASM runtime adapter](../crates/wyldtone-plugin-runtime)
+and [WAP packager](../crates/wyldtone-plugin-packager). Developers of other
+hosts can study these components as a concrete example, without depending on
+the proprietary Wyldtone engine. An independent host may use Wasmtime or
+another compatible WebAssembly runtime.
+
+This is deliberately a **minimal, non-real-time example**, not a full host
+framework or a drop-in implementation of every WAP capability. It currently
+supports an offline mono/stereo render to WAV, and **does not** include the
+proprietary Wyldtone engine, graph, monitoring, device drivers, or real-time
+processing. The proposed optional license delivery ABI is documented, but
+**not yet implemented in this reference host**. When licensing is implemented
+and validated in Wyldtone, the reference host can be updated to demonstrate it.
+See [WAP format](wap-format.md) and [licensing proposal](licensing-and-signatures.md).
 
 ## Build
 
