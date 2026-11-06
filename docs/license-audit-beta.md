@@ -78,6 +78,40 @@ versions, may be appropriate. Changing a notice does **not** by itself transfer
 copyright, and historical Apache-2.0 grants already made cannot simply be
 withdrawn retroactively.
 
+
+## Faust source-only beta: exact header and architecture check (2026-11-06)
+
+The `examples/faust_gain/gain.dsp` file contains only an authored slider,
+exponentiation and stereo multiplication; **there is no `import("stdfaust.lib")`**
+or other standard-library dependency in this example.
+
+The SDK-owned `adapters/faust/wyldtone_arch.cpp` explicitly includes these
+three Faust headers, and its `<<includeIntrinsic>>` and `<<includeclass>>`
+placeholders are expanded only when the developer **locally runs** the compiler:
+
+- [`architecture/faust/dsp/dsp.h`](https://github.com/grame-cncm/faust/blob/master/architecture/faust/dsp/dsp.h)
+- [`architecture/faust/gui/UI.h`](https://github.com/grame-cncm/faust/blob/master/architecture/faust/gui/UI.h)
+- [`architecture/faust/gui/meta.h`](https://github.com/grame-cncm/faust/blob/master/architecture/faust/gui/meta.h)
+
+These public upstream files identify **GRAME, Centre National de Création
+Musicale** as copyright holder and explicitly state **LGPL-2.1-or-later with a
+special exception**: a larger work that contains the architecture section may
+be distributed on the author's chosen terms, **so long as the Faust architecture
+section is not modified**. The exact upstream license notice must be retained;
+this is not a claim that Faust framework code itself becomes Apache-2.0.
+
+The SDK source-only release contains its own small architecture *template*,
+not the expanded Faust headers, generated C++ translation unit, or compiled
+Faust-based WAP. Therefore no Faust architecture code is redistributed in
+the **SDK source archive**. When developers distribute *their own* generated
+WAPs, the license obligations of the actual generated file, all used libraries
+and any altered Faust sections must be examined separately.
+
+**Result for this narrow use case:** No apparent conflict blocks distributing
+the unchanged SDK-owned Faust example and template under Apache-2.0. This
+assessment does **not** authorize claiming a separately distributed Faust-based
+binary, modified Faust architecture or external library is wholly Apache-2.0.
+
 ## Repository-specific items still blocking public release
 
 1. Confirm rights/provenance for original and engine-derived SDK source and
