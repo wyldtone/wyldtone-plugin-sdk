@@ -134,10 +134,11 @@ plugin must decide how to handle that (demo mode, refuse activation, etc.).
 **Implementation status:** The ABI declarations and protocol are now
 documented but the SDK runtime, WAP packager, reference host, compiler
 adapters and plugin implementations are **not yet wired up to use them**.
-The ABI has not been integration-tested, and no license verification
+A small independent WASM ABI compatibility fixture exists, but there is no
+end-to-end integration test with a licensed WAP; no license verification
 library is shipped. Thus the current beta keeps working exactly as before.
-Host-side integration and an ABI test fixture must precede declaring the
-extension stable.
+Host-side integration and end-to-end compatibility testing must precede
+declaring the extension stable.
 
 ## Security boundary and realistic expectations
 
