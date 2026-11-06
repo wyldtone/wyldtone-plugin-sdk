@@ -13,7 +13,7 @@ Third-party software is not relicensed by the SDK's Apache-2.0 license.
 The optional JUCE framework is obtained separately by each developer;
 no JUCE framework source, precompiled JUCE-based WAP, or prebuilt SDK
 Docker image is distributed with this source-only SDK release.
-See THIRD-PARTY-NOTICES.md, docs/juce-licensing.md, and
-docs/license-audit-beta.md for distribution boundaries and obligations.
+See THIRD-PARTY-NOTICES.md and docs/juce-licensing.md for distribution
+boundaries and obligations.
 
 The proprietary Wyldtone audio engine is not included in this SDK.
