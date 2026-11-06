@@ -364,7 +364,7 @@ pub fn load_wap_manifest(path: impl AsRef<Path>) -> Result<PluginManifest, Box<d
     let file = File::open(path)?;
     let mut archive = ZipArchive::new(file)?;
 
-    let mut manifest_file = archive.by_name("manifest.json")?;
+    let manifest_file = archive.by_name("manifest.json")?;
     const MAX_MANIFEST_BYTES: u64 = 1024 * 1024;
     if manifest_file.size() > MAX_MANIFEST_BYTES {
         return Err("WAP manifest.json exceeds 1 MiB".into());
