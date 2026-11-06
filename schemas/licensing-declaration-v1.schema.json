@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/wyldtone/wyldtone-plugin-sdk/blob/main/schemas/licensing-declaration-v1.schema.json",
+  "title": "Optional WAP licensing declaration (proposal v1)",
+  "description": "Proposed optional 'licensing' member in manifest.json; not yet interpreted by SDK tooling.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "license_required",
+    "license_key_ids"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "license_required": {
+      "type": "boolean"
+    },
+    "license_key_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "maxItems": 32
+    },
+    "license_delivery": {
+      "enum": [
+        "host_provided"
+      ],
+      "description": "License bytes are provided by a compatible host; plugin verifies the signature."
+    },
+    "license_format": {
+      "const": "jws-compact-eddsa-v1"
+    }
+  }
+}
