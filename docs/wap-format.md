@@ -34,7 +34,8 @@ Extensions should add optional exports or negotiate explicit ABI revisions.
 Publisher integrity signatures and independently signed license grants are
 being designed as **optional**, backwards-compatible extensions. The intended
 license validation runs inside the plugin, including with third-party hosts;
-no license ABI or DRM enforcement is implemented in this SDK yet. See
+the optional license ABI is specified but license delivery and DRM enforcement
+are not implemented in the SDK runtime or reference host yet. See
 [licensing and signatures](licensing-and-signatures.md) for the provisional
 schema, trust boundaries and open design decisions.
 
