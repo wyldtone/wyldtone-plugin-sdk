@@ -314,7 +314,7 @@ mod tests {
             "--category".into(), "Other".into()];
         assert_eq!(parse(&args).unwrap().category, "Other");
         *args.last_mut().unwrap() = "Super Heavy Drive".into();
-        assert!(parse(&args).unwrap_err().to_string().contains("Available categories"));
+        assert!(parse(&args).err().unwrap().to_string().contains("Available categories"));
     }
     #[test]
     fn rejects_bad_args() {
