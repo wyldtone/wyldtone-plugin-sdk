@@ -10,16 +10,18 @@ struct Options {
     id: String,
     name: String,
     description: String,
+    processor: Option<String>,
 }
 
 fn parse(args: &[String]) -> Result<Options> {
     let (project, flags) = args.split_first().ok_or(
-        "Usage: wyldtone init-juce <project-dir> --id ID --name NAME --description TEXT"
+        "Usage: wyldtone init-juce <project-dir> --id ID --name NAME --description TEXT [--processor CLASS]"
     )?;
     if project.starts_with('-') { return Err("Project directory must be the first argument".into()); }
     let mut id = None;
     let mut name = None;
     let mut description = None;
+    let mut processor = None;
     let mut i = 0;
     while i < flags.len() {
         let value = flags.get(i + 1).ok_or_else(|| format!("Missing value for {}", flags[i]))?;
@@ -28,6 +30,7 @@ fn parse(args: &[String]) -> Result<Options> {
             "--id" if id.is_none() => id = Some(value.clone()),
             "--name" if name.is_none() => name = Some(value.clone()),
             "--description" if description.is_none() => description = Some(value.clone()),
+            "--processor" if processor.is_none() => processor = Some(value.clone()),
             _ => return Err(format!("Unknown or duplicate option: {}", flags[i]).into()),
         }
         i += 2;
@@ -39,7 +42,7 @@ fn parse(args: &[String]) -> Result<Options> {
     Ok(Options {
         project: PathBuf::from(project), id,
         name: name.ok_or("--name required")?,
-        description: description.ok_or("--description required")?,
+        description: description.ok_or("--description required")?, processor,
     })
 }
 
@@ -64,7 +67,7 @@ fn sources(project: &Path) -> Result<Vec<PathBuf>> {
     Ok(files)
 }
 
-fn detect_processor(project: &Path, candidates: &[PathBuf]) -> Result<(String, String)> {
+fn detect_processor(project: &Path, candidates: &[PathBuf], selected: Option<&str>) -> Result<(String, String)> {
     let mut found = Vec::new();
     for path in candidates {
         if !matches!(path.extension().and_then(|e| e.to_str()), Some("h" | "hpp")) { continue; }
@@ -76,7 +79,14 @@ fn detect_processor(project: &Path, candidates: &[PathBuf]) -> Result<(String, S
             let Some(colon) = definition.find(':') else { continue };
             let class = definition[..colon].trim().split_whitespace().next().unwrap_or("");
             let inheritance = &definition[colon + 1..];
-            if !(inheritance.contains("juce::AudioProcessor") || inheritance.contains("AudioProcessor")) { continue; }
+            // Match complete base-class identifiers, never substrings:
+            // AudioProcessorEditor is an editor, not an AudioProcessor.
+            let is_processor = inheritance.split(',').any(|base| {
+                let parts: Vec<_> = base.split_whitespace().collect();
+                parts.iter().any(|part| *part == "public") &&
+                    parts.iter().any(|part| *part == "juce::AudioProcessor" || *part == "AudioProcessor")
+            });
+            if !is_processor { continue; }
             if !class.is_empty() && class.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_') {
                 let relative = path.strip_prefix(project)?.to_string_lossy().replace('\\', "/");
                 found.push((class.to_owned(), relative));
@@ -85,6 +95,14 @@ fn detect_processor(project: &Path, candidates: &[PathBuf]) -> Result<(String, S
     }
     found.sort();
     found.dedup();
+    if let Some(selected) = selected {
+        let matches: Vec<_> = found.into_iter().filter(|(class, _)| class == selected).collect();
+        return match matches.as_slice() {
+            [(class, header)] => Ok((class.clone(), header.clone())),
+            [] => Err(format!("Requested AudioProcessor class '{selected}' not found (check spelling and inheritance).").into()),
+            _ => Err(format!("AudioProcessor class '{selected}' appears in multiple headers: {:?}; resolve ambiguity manually.", matches).into()),
+        };
+    }
     match found.as_slice() {
         [(class, header)] => Ok((class.clone(), header.clone())),
         [] => Err("Could not uniquely detect a class derived from juce::AudioProcessor in a root/src header. Specify processor/header manually.".into()),
@@ -173,7 +191,7 @@ fn detect_modules_and_includes(project: &Path) -> (Vec<String>, Vec<String>) {
 
 fn generate(opts: &Options) -> Result<Value> {
     if !opts.project.is_dir() { return Err(format!("Project directory not found: {}", opts.project.display()).into()); }
-    let (processor, header) = detect_processor(&opts.project, &sources(&opts.project)?)?;
+    let (processor, header) = detect_processor(&opts.project, &sources(&opts.project)?, opts.processor.as_deref())?;
     let (modules, include_dirs) = detect_modules_and_includes(&opts.project);
     let version = detect_version(&opts.project).unwrap_or_else(|| {
         eprintln!("Warning: version not detected; using 0.1.0 (review before publishing)");
@@ -248,8 +266,40 @@ mod tests {
     fn rejects_missing_or_ambiguous_processor() {
         let p = fixture("ambiguous");
         fs::write(p.join("src/PluginProcessor.h"), "class A : public juce::AudioProcessor {}; class B : public juce::AudioProcessor {};").unwrap();
-        assert!(detect_processor(&p, &sources(&p).unwrap()).is_err());
+        assert!(detect_processor(&p, &sources(&p).unwrap(), None).is_err());
         fs::remove_dir_all(p).unwrap();
+    }
+    #[test]
+    fn editor_class_does_not_count_as_audio_processor() {
+        let p = fixture("editor");
+        fs::write(p.join("src/PluginProcessor.h"),
+            "class MonarchAudioProcessor : public juce::AudioProcessor { };").unwrap();
+        fs::write(p.join("src/PluginEditor.h"),
+            "class MonarchAudioProcessorEditor : public juce::AudioProcessorEditor { };").unwrap();
+        let (class, header) = detect_processor(&p, &sources(&p).unwrap(), None).unwrap();
+        assert_eq!(class, "MonarchAudioProcessor");
+        assert_eq!(header, "src/PluginProcessor.h");
+        fs::remove_dir_all(p).unwrap();
+    }
+    #[test]
+    fn explicit_processor_selects_from_multiple_real_processors() {
+        let p = fixture("selection");
+        fs::write(p.join("src/PluginProcessor.h"),
+            "class A : public juce::AudioProcessor {}; class B : public juce::AudioProcessor {};").unwrap();
+        let files = sources(&p).unwrap();
+        assert_eq!(detect_processor(&p, &files, Some("B")).unwrap().0, "B");
+        assert!(detect_processor(&p, &files, Some("Missing")).is_err());
+        fs::remove_dir_all(p).unwrap();
+    }
+    #[test]
+    fn accepts_processor_flag_and_rejects_duplicate() {
+        let args = ["projects/test", "--id", "org.example.test", "--name", "Example",
+            "--description", "A test", "--processor", "MonarchAudioProcessor"]
+            .iter().map(|x| x.to_string()).collect::<Vec<_>>();
+        assert_eq!(parse(&args).unwrap().processor.as_deref(), Some("MonarchAudioProcessor"));
+        let mut duplicates = args.clone();
+        duplicates.extend(["--processor".to_string(), "Other".to_string()]);
+        assert!(parse(&duplicates).is_err());
     }
     #[test]
     fn rejects_bad_args() {
