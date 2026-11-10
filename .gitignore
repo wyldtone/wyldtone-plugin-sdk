@@ -26,6 +26,9 @@
 *.a
 *.log
 
+# Local Docker Compose overrides must not be committed (may contain host paths).
+/compose.override.yaml
+
 # Developer configuration, secrets, credentials and local databases
 .env
 .env.*

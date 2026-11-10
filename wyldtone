@@ -34,6 +34,14 @@ case "$caller_dir" in
   *) workdir='/workspace' ;;
 esac
 
+# The launcher names compose.yaml explicitly so it works from any directory.
+# Include the optional local override explicitly as well; otherwise Docker Compose
+# does not discover compose.override.yaml when -f is supplied.
+compose_files=(-f "$sdk_dir/compose.yaml")
+if [[ -f "$sdk_dir/compose.override.yaml" ]]; then
+  compose_files+=(-f "$sdk_dir/compose.override.yaml")
+fi
+
 # Make cache directories as the invoking user, before Docker can create them as root.
 mkdir -p "$sdk_dir/.cache/cargo" "$sdk_dir/.cache/target"
 
@@ -48,7 +56,7 @@ group_id="$(id -g)"
 # Otherwise retain the existing sudo-based workflow without changing permissions.
 if docker info >/dev/null 2>&1; then
   exec env HOST_UID="$user_id" HOST_GID="$group_id" \
-    docker compose --project-directory "$sdk_dir" -f "$sdk_dir/compose.yaml" \
+    docker compose --project-directory "$sdk_dir" "${compose_files[@]}" \
     run --rm --workdir "$workdir" sdk "$@"
 else
   if ! command -v sudo >/dev/null 2>&1; then
@@ -56,6 +64,6 @@ else
     exit 1
   fi
   exec sudo env HOST_UID="$user_id" HOST_GID="$group_id" \
-    docker compose --project-directory "$sdk_dir" -f "$sdk_dir/compose.yaml" \
+    docker compose --project-directory "$sdk_dir" "${compose_files[@]}" \
     run --rm --workdir "$workdir" sdk "$@"
 fi

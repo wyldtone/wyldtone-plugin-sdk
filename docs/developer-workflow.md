@@ -43,6 +43,65 @@ existing Compose `sdk` service. Image rebuilds still use
 `sudo docker compose build sdk` (or `docker compose build sdk` if authorized).
 
 
+## Building plugins outside the SDK repository (Docker Compose)
+
+Keep third-party plugin sources **outside** the public SDK checkout so they
+cannot accidentally be included in SDK commits. For example:
+
+```text
+~/wyldtone-plugin-sdk/
+~/JUCE-upstream/
+~/wyldtone-plugins/
+  obsidian_b7000/
+    plugin.config.json
+    src/
+```
+
+Clone your plugin into the external directory and create a **local**
+`compose.override.yaml` in the SDK root:
+
+```yaml
+services:
+  sdk:
+    volumes:
+      - ../wyldtone-plugins:/workspace/projects
+```
+
+The path on the left is relative to the SDK directory (the Compose project
+directory); the path on the right is where it appears **inside the container**.
+For a project stored elsewhere, replace the left path with an absolute host path
+or an appropriate relative path. The SDK's normal `compose.yaml` mounts remain
+active. The override is ignored by Git via `.gitignore` and should not be
+committed, especially if it contains developer-specific directories or secrets.
+
+From the SDK root, verify that the container sees the configuration:
+
+```bash
+docker compose config
+docker compose run --rm sdk shell -c 'ls -l /workspace/projects/obsidian_b7000/plugin.config.json'
+```
+
+Then use the regular launcher; **no special `docker compose run` command is
+needed**:
+
+```bash
+./wyldtone build projects/obsidian_b7000/plugin.config.json
+./wyldtone inspect projects/obsidian_b7000/build/wyldtone/Obsidian-B7000.wap
+```
+
+The output files are written to the external project under
+`~/wyldtone-plugins/obsidian_b7000/build/wyldtone/`. The launcher explicitly
+adds an existing `compose.override.yaml` to its Compose file list, including
+when called through a symlink or from another directory. Without an override
+it uses only `compose.yaml`, as before.
+
+For a one-off build, you can also use `docker compose run --rm sdk build ...`.
+If you see `Plugin configuration not found`, check
+`docker compose config` and the container-side `ls` command above; having
+the file on the host does not by itself make it visible inside Docker.
+If Docker requires `sudo` on your system, prefix the direct `docker compose`
+commands with `sudo`; the `./wyldtone` launcher handles this automatically.
+
 ## Short Docker commands (Windows)
 
 Docker Desktop must be running in **Linux containers** mode. Install the SDK

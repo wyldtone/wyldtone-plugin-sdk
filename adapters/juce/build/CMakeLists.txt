@@ -348,7 +348,14 @@ target_include_directories(wyldtone_plugin
 # Optional JUCE modules
 # --------------------------------------------------------------------------
 
-set(WYLD_JUCE_TARGETS "")
+# HeadlessAPVTS.cpp calls into ValueTree and UndoManager. Including their
+# declarations in JuceHeader.h is insufficient: the juce_data_structures
+# implementation must be linked into the final WASM module.
+# Keep this in the SDK adapter so every JUCE plugin using APVTS benefits.
+if(NOT TARGET juce::juce_data_structures)
+    message(FATAL_ERROR "Required JUCE module unavailable: juce_data_structures")
+endif()
+set(WYLD_JUCE_TARGETS juce::juce_data_structures)
 
 foreach(module IN LISTS WYLDTONE_JUCE_MODULES)
     if(NOT TARGET juce::${module})
