@@ -7,7 +7,7 @@ mod developer;
 mod init_juce;
 
 use std::{env, error::Error, fs, path::{Path,PathBuf}, process::{Command,Stdio}};
-use wyldtone_plugin_api::{config::PluginConfig, manifest::PluginManifest};
+use wyldtone_plugin_api::{config::PluginConfig, manifest::PluginManifest, categories::{normalize_category,category_error}};
 use wyldtone_plugin_runtime::wasm_abi::WasmPlugin;
 use wyldtone_plugin_packager::package::{create_wap_with_icon,package_name};
 use wyldtone_plugin_runtime::dsp_probe::ProbeProfile;
@@ -22,7 +22,10 @@ fn dependency(name: &str) -> Result<()> {
 }
 
 fn read_config(path: &Path) -> Result<PluginConfig> {
-    let config: PluginConfig = serde_json::from_slice(&fs::read(path)?)?;
+    let mut config: PluginConfig = serde_json::from_slice(&fs::read(path)?)?;
+    if let Some(category) = config.category.as_deref() {
+        config.category = Some(normalize_category(category).ok_or_else(|| category_error(category))?.to_owned());
+    }
     if config.id.trim().is_empty() || config.name.trim().is_empty() {
         return Err("Plugin id and name must not be empty".into());
     }
@@ -156,7 +159,7 @@ fn help() {
     println!(r#"Wyldtone Plugin SDK CLI
   wyldtone new <directory> --template cpp|juce|faust [--manufacturer NAME]
   wyldtone doctor
-  wyldtone init-juce <project-dir> --id ID --name NAME --description TEXT [--processor CLASS]
+  wyldtone init-juce <project-dir> --id ID --name NAME --description TEXT --category CATEGORY [--processor CLASS]
   wyldtone build [directory|plugin.config.json] [--dsp-profile quick|balanced|deep] [--skip-dsp-test | --fail-on-inactive]
   wyldtone inspect <plugin.wap|plugin.wasm>
   wyldtone validate <plugin.wap>

@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "categories": [
+    "Amp",
+    "Cabinet",
+    "Drive",
+    "Dynamics",
+    "EQ / Filter",
+    "Modulation",
+    "Delay",
+    "Reverb",
+    "Pitch",
+    "Synth",
+    "Analyzer",
+    "Utility",
+    "Other"
+  ],
+  "aliases": {
+    "eq": "EQ / Filter",
+    "equalizer": "EQ / Filter",
+    "eq/filter": "EQ / Filter",
+    "distortion": "Drive",
+    "overdrive": "Drive",
+    "fuzz": "Drive"
+  }
+}

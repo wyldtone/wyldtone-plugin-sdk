@@ -2,6 +2,7 @@
 //! It never edits upstream project files other than creating a new config.
 use std::{error::Error, fs, path::{Path, PathBuf}};
 use serde_json::{json, Value};
+use wyldtone_plugin_api::categories::{normalize_category,category_error,CATEGORIES};
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
@@ -11,17 +12,19 @@ struct Options {
     name: String,
     description: String,
     processor: Option<String>,
+    category: String,
 }
 
 fn parse(args: &[String]) -> Result<Options> {
     let (project, flags) = args.split_first().ok_or(
-        "Usage: wyldtone init-juce <project-dir> --id ID --name NAME --description TEXT [--processor CLASS]"
+        "Usage: wyldtone init-juce <project-dir> --id ID --name NAME --description TEXT --category CATEGORY [--processor CLASS]"
     )?;
     if project.starts_with('-') { return Err("Project directory must be the first argument".into()); }
     let mut id = None;
     let mut name = None;
     let mut description = None;
     let mut processor = None;
+    let mut category = None;
     let mut i = 0;
     while i < flags.len() {
         let value = flags.get(i + 1).ok_or_else(|| format!("Missing value for {}", flags[i]))?;
@@ -31,6 +34,7 @@ fn parse(args: &[String]) -> Result<Options> {
             "--name" if name.is_none() => name = Some(value.clone()),
             "--description" if description.is_none() => description = Some(value.clone()),
             "--processor" if processor.is_none() => processor = Some(value.clone()),
+            "--category" if category.is_none() => category = Some(normalize_category(value).ok_or_else(|| category_error(value))?.to_owned()),
             _ => return Err(format!("Unknown or duplicate option: {}", flags[i]).into()),
         }
         i += 2;
@@ -43,6 +47,7 @@ fn parse(args: &[String]) -> Result<Options> {
         project: PathBuf::from(project), id,
         name: name.ok_or("--name required")?,
         description: description.ok_or("--description required")?, processor,
+        category: category.ok_or_else(|| format!("--category required. Available categories: {}", CATEGORIES.join(", ")))?,
     })
 }
 
@@ -205,6 +210,7 @@ fn generate(opts: &Options) -> Result<Value> {
     if audio.is_none() { eprintln!("Warning: audio buses not statically recognized; omitted (review before building)"); }
     let mut json = json!({
         "id": opts.id, "name": opts.name, "description": opts.description,
+        "category": opts.category,
         "manufacturer": manufacturer, "version": version,
         "juce": {
             "processor": processor, "header": header,
@@ -250,7 +256,7 @@ mod tests {
         fs::write(p.join("src/PluginProcessor.h"), "class ExistingAudioProcessor : public juce::AudioProcessor { };").unwrap();
         fs::write(p.join("src/PluginProcessor.cpp"), "AudioProcessor(BusesProperties().withInput(\"Input\", juce::AudioChannelSet::stereo(), true).withOutput(\"Output\", juce::AudioChannelSet::stereo(), true))").unwrap();
         fs::write(p.join("src/dsp/Chain.h"), "#include <juce_dsp/juce_dsp.h>").unwrap();
-        let args = vec![p.display().to_string(),"--id".into(),"org.example.test".into(),"--name".into(),"Example".into(),"--description".into(),"My plugin".into()];
+        let args = vec![p.display().to_string(),"--id".into(),"org.example.test".into(),"--name".into(),"Example".into(),"--description".into(),"My plugin".into(),"--category".into(),"EQ".into()];
         run(&args).unwrap();
         let json:Value = serde_json::from_slice(&fs::read(p.join("plugin.config.json")).unwrap()).unwrap();
         assert_eq!(json["juce"]["processor"],"ExistingAudioProcessor");
@@ -294,12 +300,21 @@ mod tests {
     #[test]
     fn accepts_processor_flag_and_rejects_duplicate() {
         let args = ["projects/test", "--id", "org.example.test", "--name", "Example",
-            "--description", "A test", "--processor", "MonarchAudioProcessor"]
+            "--description", "A test", "--category", "Drive", "--processor", "MonarchAudioProcessor"]
             .iter().map(|x| x.to_string()).collect::<Vec<_>>();
         assert_eq!(parse(&args).unwrap().processor.as_deref(), Some("MonarchAudioProcessor"));
         let mut duplicates = args.clone();
         duplicates.extend(["--processor".to_string(), "Other".to_string()]);
         assert!(parse(&duplicates).is_err());
+    }
+    #[test]
+    fn category_validation_and_other_fallback() {
+        let mut args = vec!["projects/test".into(), "--id".into(), "org.example.test".into(),
+            "--name".into(), "Test".into(), "--description".into(), "Plugin".into(),
+            "--category".into(), "Other".into()];
+        assert_eq!(parse(&args).unwrap().category, "Other");
+        *args.last_mut().unwrap() = "Super Heavy Drive".into();
+        assert!(parse(&args).err().unwrap().to_string().contains("Available categories"));
     }
     #[test]
     fn rejects_bad_args() {

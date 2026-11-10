@@ -1,7 +1,7 @@
 //! Small developer-facing commands. No dependencies on the proprietary engine.
 use std::{collections::HashSet, env, error::Error, fs, path::{Path, PathBuf}, process::{Command, Stdio}};
 
-use wyldtone_plugin_api::{manifest::{PluginManifest, MANIFEST_FORMAT_VERSION}, parameter::Parameter};
+use wyldtone_plugin_api::{manifest::{PluginManifest, MANIFEST_FORMAT_VERSION}, parameter::Parameter, categories::{normalize_category,category_error}};
 use wyldtone_plugin_packager::package::{load_wap, load_wap_icon};
 use wyldtone_plugin_runtime::wasm_abi::WasmPlugin;
 
@@ -176,6 +176,11 @@ fn check_manifest(manifest: &PluginManifest) -> Result<()> {
         if value.trim().is_empty() {return Err(format!("Manifest plugin.{field} must not be empty").into());}
     }
     let mut ids = HashSet::new();
+    if let Some(category) = manifest.plugin.category.as_deref() {
+        if normalize_category(category).is_none() {
+            return Err(category_error(category).into());
+        }
+    }
     for param in &manifest.parameters {
         if param.id.trim().is_empty() || !ids.insert(param.id.as_str()) {
             return Err(format!("Empty or duplicate manifest parameter ID: {}",param.id).into());
