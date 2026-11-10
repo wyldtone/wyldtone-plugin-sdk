@@ -6,7 +6,7 @@ if [ "$#" -eq 0 ]; then
 fi
 
 case "$1" in
-  new|doctor|inspect|validate|build|manifest|package|test-dsp|benchmark)
+  new|init-juce|doctor|inspect|validate|build|manifest|package|test-dsp|benchmark)
     exec cargo run --release --locked -p wyldtone-cli -- "$@"
     ;;
   host)
@@ -38,6 +38,7 @@ case "$1" in
 Usage:
   docker compose run --rm sdk versions
   docker compose run --rm sdk doctor
+  docker compose run --rm sdk init-juce projects/Plugin --id org.example.plugin --name Plugin --description 'Plugin description'
   docker compose run --rm sdk new MyEffect --template cpp
   docker compose run --rm sdk new MySynth --template faust
   docker compose run --rm sdk new MyJucePlugin --template juce
