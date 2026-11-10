@@ -110,6 +110,37 @@ README. The generated ID uses the placeholder namespace `org.example` and must
 be changed before uploading to any marketplace. Rename the producer field and
 review the default version, category, declared audio buses, and license.
 
+### Generate plugin.config.json for an existing JUCE project
+
+Use the existing sources instead of copying the sample config:
+
+```bash
+./wyldtone init-juce projects/obsidian_b7000 \
+  --id com.leighpierce.obsidianb7000 \
+  --name "Obsidian B7000" \
+  --description "Circuit-modelled bass preamp and overdrive"
+```
+
+The generator reads source files without executing the project's CMake scripts.
+It detects a single AudioProcessor class in a root/src header, processor header path,
+CMake project VERSION and COMPANY_NAME, simple mono/stereo audio buses,
+juce_dsp headers and known header-only dependency include roots.
+It creates plugin.config.json in the project root and refuses to overwrite it.
+
+Discovery is **best-effort**, not a general C++ or CMake parser. It warns if audio
+buses could not be resolved (and omits them) or if version/manufacturer require
+fallback values. If more than one processor class is found, it fails instead of
+guessing. Review all generated fields, including audio buses, manufacturer,
+version, modules, includes and licensing, before distributing a WAP.
+Complex third-party CMake builds may need manual configuration or SDK support.
+
+For external projects, provide the container-visible path mounted through
+compose.override.yaml (see the external projects section). Then run:
+
+```bash
+./wyldtone build projects/obsidian_b7000/plugin.config.json
+```
+
 ### JUCE notes
 
 The JUCE template uses an original minimal processor written for this SDK,
