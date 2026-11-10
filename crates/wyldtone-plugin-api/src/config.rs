@@ -17,6 +17,9 @@ pub struct PluginConfig {
     /// Optional library section, e.g. "Dynamics" or "Drive".
     #[serde(default)]
     pub category: Option<String>,
+    /// Optional plain-text description for plugin catalogs and inspectors.
+    #[serde(default)]
+    pub description: Option<String>,
     /// Optional relative path to SVG (theme-colored) or PNG (original colors).
     /// By default, icon.svg is preferred over icon.png in the plugin directory.
     #[serde(default)]
