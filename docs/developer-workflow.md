@@ -180,6 +180,12 @@ Use the existing sources instead of copying the sample config:
   --description "Circuit-modelled bass preamp and overdrive"
 ```
 
+If the project exposes several processors, select the one to package explicitly
+with `--processor MonarchAudioProcessor`. A class such as
+`MonarchAudioProcessorEditor` inherits from `AudioProcessorEditor`, so it must
+never be recognized as an audio processor. The generator matches exact
+base-class identifiers to distinguish these.
+
 The generator reads source files without executing the project's CMake scripts.
 It detects a single AudioProcessor class in a root/src header, processor header path,
 CMake project VERSION and COMPANY_NAME, simple mono/stereo audio buses,
