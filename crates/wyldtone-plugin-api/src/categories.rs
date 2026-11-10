@@ -30,7 +30,7 @@ mod tests {
         let names = value["categories"].as_array().unwrap().iter().map(|v| v.as_str().unwrap()).collect::<Vec<_>>();
         assert_eq!(names, CATEGORIES);
         for (alias, canonical) in value["aliases"].as_object().unwrap() {
-            assert_eq!(normalize_category(alias), Some(canonical.as_str()));
+            assert_eq!(normalize_category(alias), canonical.as_str());
         }
     }
     #[test]
