@@ -206,6 +206,38 @@ compose.override.yaml (see the external projects section). Then run:
 ./wyldtone build projects/obsidian_b7000/plugin.config.json
 ```
 
+### Standard plugin categories (taxonomy v1)
+
+Plugin categories are a closed, versioned list maintained in the public
+SDK's [categories.json](../categories.json). Canonical categories are:
+
+Amp, Cabinet, Drive, Dynamics, EQ / Filter, Modulation, Delay, Reverb,
+Pitch, Synth, Analyzer, Utility, and Other.
+
+**Other is a valid category** for genuinely new plugin types, not just an
+error fallback. The SDK accepts case-insensitive canonical labels and
+a few legacy aliases (for example `EQ` becomes `EQ / Filter`, and
+`Distortion` becomes `Drive`). Unknown names such as
+`Super Heavy Drive` fail with the full allowed list. Use the canonical
+names in published manifests.
+
+For JUCE projects, pass `--category` when generating a configuration:
+
+```bash
+./wyldtone init-juce projects/monarch \
+  --id com.example.monarch \
+  --name "Monarch Of Tone" \
+  --description "Overdrive effect" \
+  --category Drive
+```
+
+Build and WAP validation also check categories. Historical WAPs without
+category metadata remain supported; the host classifies them under its
+legacy fallback, while unknown explicit category names show as Other in
+the engine rather than becoming new UI folders. Cloud uploads reject
+unknown explicit categories. Changes to the taxonomy require coordinated
+SDK, Cloud and Engine updates.
+
 ### JUCE notes
 
 The JUCE template uses an original minimal processor written for this SDK,
