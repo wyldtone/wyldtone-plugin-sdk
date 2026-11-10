@@ -156,7 +156,7 @@ fn help() {
     println!(r#"Wyldtone Plugin SDK CLI
   wyldtone new <directory> --template cpp|juce|faust [--manufacturer NAME]
   wyldtone doctor
-  wyldtone init-juce <project-dir> --id ID --name NAME --description TEXT
+  wyldtone init-juce <project-dir> --id ID --name NAME --description TEXT [--processor CLASS]
   wyldtone build [directory|plugin.config.json] [--dsp-profile quick|balanced|deep] [--skip-dsp-test | --fail-on-inactive]
   wyldtone inspect <plugin.wap|plugin.wasm>
   wyldtone validate <plugin.wap>
