@@ -127,11 +127,13 @@ fn detect_audio(project: &Path) -> Option<Value> {
     let s = fs::read_to_string(path).ok()?;
     fn side(s: &str, method: &str) -> Option<u32> {
         let at = s.find(method)?;
-        let tail = &s[at..];
-        let stop = tail.find(".with").filter(|&i| i > 1).unwrap_or(tail.len());
-        let call = &tail[..stop];
-        if call.contains("AudioChannelSet::stereo()") { Some(2) }
-        else if call.contains("AudioChannelSet::mono()") { Some(1) }
+        let tail = &s[at + method.len()..];
+        let next_side = tail.find(".with").unwrap_or(tail.len());
+        let call = &tail[..next_side];
+        let set = call.find("AudioChannelSet::")?;
+        let channels = &call[set + "AudioChannelSet::".len()..];
+        if channels.starts_with("stereo()") { Some(2) }
+        else if channels.starts_with("mono()") { Some(1) }
         else { None }
     }
     Some(json!({"inputs":[side(&s, ".withInput(")?],"outputs":[side(&s, ".withOutput(")?]}))
