@@ -25,6 +25,8 @@ pub struct PluginMetadata {
     pub version: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub category: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -223,6 +225,7 @@ impl PluginManifest {
                 manufacturer: config.manufacturer.clone(),
                 version: config.version.clone(),
                 category: config.category.clone(),
+                description: config.description.clone(),
             },
 
             parameters: parameters
@@ -440,6 +443,23 @@ mod tests {
         let json = r#"{"id":"com.example.old","name":"Old","manufacturer":"Test","version":"1"}"#;
         let metadata: PluginMetadata = serde_json::from_str(json).unwrap();
         assert_eq!(metadata.category, None);
+        assert_eq!(metadata.description, None);
+    }
+
+    #[test]
+    fn description_is_optional_and_roundtrips_as_plain_text() {
+        let text = "<img src=x onerror=alert(1)> & a chorus";
+        let value: PluginMetadata = serde_json::from_value(serde_json::json!({
+            "id": "com.example.chorus",
+            "name": "Chorus",
+            "manufacturer": "Example",
+            "version": "1.0",
+            "description": text
+        })).unwrap();
+        assert_eq!(value.description.as_deref(), Some(text));
+        let encoded = serde_json::to_string(&value).unwrap();
+        let decoded: PluginMetadata = serde_json::from_str(&encoded).unwrap();
+        assert_eq!(decoded.description.as_deref(), Some(text));
     }
 
     #[test]
@@ -454,6 +474,7 @@ mod tests {
                 manufacturer: "Example".to_string(),
                 version: "1.0.0".to_string(),
                 category: None,
+                description: None,
             },
             parameters: parameters
                 .iter()
@@ -479,6 +500,7 @@ mod tests {
                     manufacturer: "Example".to_string(),
                     version: "1.0.0".to_string(),
                     category: None,
+                description: None,
                     icon: None,
                     juce: None,
                     cpp: None,
@@ -513,6 +535,7 @@ mod tests {
                 manufacturer: "Example".to_string(),
                 version: "1.0.0".to_string(),
                 category: None,
+                description: None,
             },
             parameters: parameters[1..]
                 .iter()
@@ -542,6 +565,7 @@ mod tests {
                     manufacturer: "Example".to_string(),
                     version: "1.0.0".to_string(),
                     category: None,
+                description: None,
                     icon: None,
                     juce: None,
                     cpp: None,
@@ -584,6 +608,7 @@ mod tests {
                 manufacturer: "Example".to_string(),
                 version: "1.0.0".to_string(),
                 category: None,
+                description: None,
             },
             parameters: vec![
                 ManifestParameter {

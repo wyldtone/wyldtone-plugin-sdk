@@ -501,6 +501,7 @@ mod tests {
                 manufacturer: "Example".to_string(),
                 version: "1.0.0".to_string(),
             category: None,
+            description: None,
             },
 
             parameters: vec![
