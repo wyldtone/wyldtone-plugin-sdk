@@ -4,6 +4,7 @@ mod faust;
 mod dsp_test;
 mod benchmark;
 mod developer;
+mod init_juce;
 
 use std::{env, error::Error, fs, path::{Path,PathBuf}, process::{Command,Stdio}};
 use wyldtone_plugin_api::{config::PluginConfig, manifest::PluginManifest};
@@ -155,6 +156,7 @@ fn help() {
     println!(r#"Wyldtone Plugin SDK CLI
   wyldtone new <directory> --template cpp|juce|faust [--manufacturer NAME]
   wyldtone doctor
+  wyldtone init-juce <project-dir> --id ID --name NAME --description TEXT
   wyldtone build [directory|plugin.config.json] [--dsp-profile quick|balanced|deep] [--skip-dsp-test | --fail-on-inactive]
   wyldtone inspect <plugin.wap|plugin.wasm>
   wyldtone validate <plugin.wap>
@@ -202,6 +204,7 @@ fn run() -> Result<()> {
             build(&config, parse_build_options(flags)?)
         },
         [cmd, rest @ ..] if cmd == "new" => developer::new(rest),
+        [cmd, rest @ ..] if cmd == "init-juce" => init_juce::run(rest),
         [cmd] if cmd == "doctor" => developer::doctor(),
         [cmd, path] if cmd == "inspect" => developer::inspect(Path::new(path)),
         [cmd, path] if cmd == "validate" => developer::validate(Path::new(path)),
