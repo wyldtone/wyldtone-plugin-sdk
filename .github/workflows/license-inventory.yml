@@ -1,7 +1,6 @@
 name: Rust third-party license inventory
 
 on:
-  pull_request:
   workflow_dispatch:
 
 permissions:
