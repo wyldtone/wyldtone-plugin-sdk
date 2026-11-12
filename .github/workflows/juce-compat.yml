@@ -1,16 +1,6 @@
 name: JUCE adapter compatibility (external checkout)
 
 on:
-  # Run the expensive JUCE build only when JUCE-specific source changes.
-  # Manual runs remain possible through Actions > Run workflow.
-  pull_request:
-    paths:
-      - '.github/workflows/juce-compat.yml'
-      - 'examples/juce_gain/**'
-      - 'adapters/juce/**'
-      - 'crates/wyldtone-cli/src/juce.rs'
-      # The JUCE project boilerplate is embedded in this shared generator.
-      - 'crates/wyldtone-cli/src/developer.rs'
   workflow_dispatch:
 
 permissions:
