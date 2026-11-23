@@ -377,6 +377,20 @@ pub fn load_wap(
     let manifest: PluginManifest =
         serde_json::from_slice(&manifest_data)?;
 
+    if let Some(license) = &manifest.plugin.license {
+        license.validate()?;
+        for notice in &license.notices {
+            let mut entry = archive.by_name(&notice.path).map_err(|_| {
+                format!("WAP is missing declared license notice: {}", notice.path)
+            })?;
+            if entry.size() == 0 || entry.size() > 64 * 1024 {
+                return Err("WAP contains an empty or oversized license notice".into());
+            }
+            let mut text = String::new();
+            entry.read_to_string(&mut text)?;
+        }
+    }
+
     let wasm = {
         let mut wasm_file =
             archive
