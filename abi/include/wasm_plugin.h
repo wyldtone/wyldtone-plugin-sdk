@@ -95,6 +95,11 @@
  * handles this on a non-audio thread. Optional license ABI below. */
 #define WASM_PLUGIN_EVENT_LICENSE_REQUESTED 0x04
 
+/* The plugin's effective algorithmic latency has changed. The host must
+ * realign downstream routes using already-reserved delay buffers at an
+ * audio-block boundary. Older hosts may ignore this event. */
+#define WASM_PLUGIN_EVENT_LATENCY_CHANGED 0x08
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -189,6 +194,38 @@ int32_t plugin_input_bus_count(void);
 int32_t plugin_output_bus_count(void);
 int32_t plugin_input_bus_channels(int32_t bus_index);
 int32_t plugin_output_bus_channels(int32_t bus_index);
+
+
+/*
+ * ============================================================================
+ *  Optional processor latency ABI (backwards compatible)
+ * ============================================================================
+ *
+ * All values are WHOLE sample frames at the HOST sample rate. They describe
+ * signal latency, not CPU processing time or musical delays (chorus, echo).
+ *
+ * plugin_latency_samples() returns the latency for CURRENT parameters.
+ * Call after plugin_init(), and again after latency-affecting parameter/state
+ * changes. Must be deterministic, cheap, allocation-free and nonnegative.
+ *
+ * plugin_max_latency_samples() returns a fixed upper bound for this instance
+ * at its prepared audio sample rate, across ALL supported parameter values.
+ * The host may reserve delay lines up front using this value; later reports
+ * MUST NOT exceed it. Variable-latency plugins MUST implement both exports.
+ *
+ * Both exports are optional. If absent, the host treats a plugin as zero
+ * latency, preserving compatibility with older WAPs. If only the current
+ * latency is available, the host treats it as a fixed maximum.
+ *
+ * An active plugin changing latency internally (rather than via a host
+ * parameter call) should also raise WASM_PLUGIN_EVENT_LATENCY_CHANGED.
+ *
+ * A host may cap abusive reports; plugin authors should remain well below
+ * 65536 samples. Fractional-sample latency is not supported: design the
+ * resampler's total delay to be integral in input frames.
+ */
+int32_t plugin_latency_samples(void);
+int32_t plugin_max_latency_samples(void);
 
 
 /*
