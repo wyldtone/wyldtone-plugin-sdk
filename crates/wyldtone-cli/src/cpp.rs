@@ -105,18 +105,58 @@ pub fn build(
         .arg("-s")
         .arg(if audio.is_some() { all_exports_setting() } else { exported_functions_setting() });
 
-    for source in &config.sources {
+    // Compile C99 translation units with emcc *separately* rather than
+    // relying on -x c in a mixed em++ compile/link command. The em++ wrapper
+    // may still force C++ mode, producing reorder-init-list warnings and
+    // subtly different semantics for C99 designated initializers.
+    let mut c_objects = Vec::new();
+    for (index, source) in config.sources.iter().enumerate() {
         let source_path = plugin_dir.join(source);
-
         if !source_path.is_file() {
             return Err(format!(
-                "C++ source file does not exist: {}",
+                "C/C++ source file does not exist: {}",
                 source_path.display()
             )
             .into());
         }
-
-        command.arg(source_path);
+        match source_path.extension().and_then(|ext| ext.to_str()) {
+            Some("c") => {
+                let object_path = output_path.with_file_name(format!(
+                    "wyldtone_c99_{index}.o"
+                ));
+                let status = Command::new("emcc")
+                    .arg("-std=c99")
+                    .arg("-O2")
+                    .arg("-I")
+                    .arg(&include_dir)
+                    .arg("-c")
+                    .arg(&source_path)
+                    .arg("-o")
+                    .arg(&object_path)
+                    .status()?;
+                if !status.success() {
+                    return Err(format!(
+                        "C99 WASM compilation failed: {}",
+                        source_path.display()
+                    ).into());
+                }
+                c_objects.push(object_path);
+            }
+            Some("cc" | "cpp" | "cxx") => {
+                command.arg(&source_path);
+            }
+            _ => {
+                return Err(format!(
+                    "Unsupported C/C++ plugin source extension: {}",
+                    source_path.display()
+                ).into());
+            }
+        }
+    }
+    // Precompiled C objects link with the C++ WAP adapter and generated
+    // bus metadata. Only the final link command uses em++.
+    for object in &c_objects {
+        command.arg(object);
     }
 
     // Generated weak definitions permit old plugins to provide strong, hand-written
@@ -137,6 +177,11 @@ pub fn build(
 
     if !status.success() {
         return Err("C++ WASM build failed".into());
+    }
+    for object in c_objects {
+        // Prebuilt C objects are intermediate files; only plugin.wasm is
+        // needed for WAP packaging.
+        let _ = fs::remove_file(object);
     }
 
     Ok(())

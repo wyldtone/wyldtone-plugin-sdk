@@ -27,6 +27,61 @@ pub struct PluginMetadata {
     pub category: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// Optional OSS license metadata; unrelated to future entitlement/DRM licensing.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub license: Option<PluginLicense>,
+}
+
+/// Attribution metadata that stays readable inside the WAP manifest.
+/// Full legal notices are also included as ZIP entries at the stated paths.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PluginLicense {
+    /// SPDX expression e.g. "Apache-2.0 AND MIT".
+    pub expression: String,
+    /// Entries inside the WAP ZIP, not external links or filesystem paths.
+    pub notices: Vec<LicenseNotice>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LicenseNotice {
+    pub component: String,
+    pub spdx: String,
+    pub path: String,
+}
+
+impl PluginLicense {
+    pub fn validate(&self) -> Result<(), String> {
+        if self.expression.is_empty() || self.expression.len() > 128
+            || !self.expression.bytes().all(|b| b.is_ascii_alphanumeric()
+                || matches!(b, b' ' | b'.' | b'-' | b'+' | b'(' | b')'))
+        {
+            return Err("Invalid SPDX license expression".into());
+        }
+        if self.notices.is_empty() || self.notices.len() > 16 {
+            return Err("License metadata must contain 1..=16 notices".into());
+        }
+        let mut paths = std::collections::HashSet::new();
+        for notice in &self.notices {
+            let path = &notice.path;
+            let Some(name) = path.strip_prefix("licenses/") else {
+                return Err("License notices must be under licenses/".into());
+            };
+            if name.is_empty() || name.len() > 100 || name.contains("..")
+                || !name.bytes().all(|b| b.is_ascii_alphanumeric()
+                    || matches!(b, b'-' | b'_' | b'.'))
+                || !(name.ends_with(".txt") || name.ends_with(".md"))
+                || !paths.insert(path)
+            {
+                return Err(format!("Invalid or duplicate license notice path: {path}"));
+            }
+            if notice.component.trim().is_empty() || notice.component.len() > 128
+                || notice.spdx.is_empty() || notice.spdx.len() > 80
+            {
+                return Err("License notice needs component and SPDX identifier".into());
+            }
+        }
+        Ok(())
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -226,6 +281,7 @@ impl PluginManifest {
                 version: config.version.clone(),
                 category: config.category.clone(),
                 description: config.description.clone(),
+                license: config.license.clone(),
             },
 
             parameters: parameters
@@ -444,6 +500,36 @@ mod tests {
         let metadata: PluginMetadata = serde_json::from_str(json).unwrap();
         assert_eq!(metadata.category, None);
         assert_eq!(metadata.description, None);
+        assert_eq!(metadata.license, None);
+    }
+
+    #[test]
+    fn license_metadata_is_optional_and_rejects_unsafe_zip_entries() {
+        let old: PluginMetadata = serde_json::from_str(
+            r#"{"id":"legacy","name":"Old","manufacturer":"Example","version":"1"}"#,
+        ).unwrap();
+        assert!(old.license.is_none());
+
+        let license = PluginLicense {
+            expression: "Apache-2.0 AND MIT".into(),
+            notices: vec![LicenseNotice {
+                component: "0xFX amp DSP".into(),
+                spdx: "MIT".into(),
+                path: "licenses/0xFX-MIT.txt".into(),
+            }],
+        };
+        license.validate().unwrap();
+        let decoded: PluginLicense =
+            serde_json::from_str(&serde_json::to_string(&license).unwrap()).unwrap();
+        assert_eq!(license, decoded);
+        let mut invalid = license;
+        invalid.notices[0].path = "licenses/../untrusted.txt".into();
+        assert!(invalid.validate().is_err());
+        invalid.notices[0].path = "/etc/passwd".into();
+        assert!(invalid.validate().is_err());
+        invalid.notices[0].path = "licenses/ok.txt".into();
+        invalid.notices.push(invalid.notices[0].clone());
+        assert!(invalid.validate().is_err());
     }
 
     #[test]
@@ -475,6 +561,7 @@ mod tests {
                 version: "1.0.0".to_string(),
                 category: None,
                 description: None,
+                license: None,
             },
             parameters: parameters
                 .iter()
@@ -501,6 +588,7 @@ mod tests {
                     version: "1.0.0".to_string(),
                     category: None,
                 description: None,
+                license: None,
                     icon: None,
                     juce: None,
                     cpp: None,
@@ -536,6 +624,7 @@ mod tests {
                 version: "1.0.0".to_string(),
                 category: None,
                 description: None,
+                license: None,
             },
             parameters: parameters[1..]
                 .iter()
@@ -566,6 +655,7 @@ mod tests {
                     version: "1.0.0".to_string(),
                     category: None,
                 description: None,
+                license: None,
                     icon: None,
                     juce: None,
                     cpp: None,
@@ -609,6 +699,7 @@ mod tests {
                 version: "1.0.0".to_string(),
                 category: None,
                 description: None,
+                license: None,
             },
             parameters: vec![
                 ManifestParameter {
