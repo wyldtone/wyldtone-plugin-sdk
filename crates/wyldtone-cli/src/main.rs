@@ -9,7 +9,7 @@ mod init_juce;
 use std::{env, error::Error, fs, path::{Path,PathBuf}, process::{Command,Stdio}};
 use wyldtone_plugin_api::{config::PluginConfig, manifest::PluginManifest, categories::{normalize_category,category_error}};
 use wyldtone_plugin_runtime::wasm_abi::WasmPlugin;
-use wyldtone_plugin_packager::package::{create_wap_with_icon,package_name};
+use wyldtone_plugin_packager::package::{create_wap_with_icon,create_wap_with_icon_and_notices,package_name};
 use wyldtone_plugin_runtime::dsp_probe::ProbeProfile;
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
@@ -30,6 +30,7 @@ fn read_config(path: &Path) -> Result<PluginConfig> {
         return Err("Plugin id and name must not be empty".into());
     }
     if let Some(audio) = &config.audio { audio.validate()?; }
+    if let Some(license) = &config.license { license.validate()?; }
     Ok(config)
 }
 
@@ -150,7 +151,12 @@ fn build(path: &Path, options: BuildOptions) -> Result<()> {
     }
     let dest = output_dir.join(package_name(&config.name));
     let icon = icon_for(&config, dir)?;
-    create_wap_with_icon(&wasm, &manifest, &dest, icon.as_deref())?;
+    let notices = config.license.as_ref().map(|license| {
+        license.notices.iter().map(|notice|
+            (notice.path.clone(), dir.join(&notice.path))
+        ).collect::<Vec<_>>()
+    }).unwrap_or_default();
+    create_wap_with_icon_and_notices(&wasm, &manifest, &dest, icon.as_deref(), &notices)?;
     println!("WAP: {}", dest.display());
     Ok(())
 }
