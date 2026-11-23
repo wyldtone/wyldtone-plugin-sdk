@@ -1,0 +1,27 @@
+name: WASM latency ABI regression
+
+on:
+  push:
+    branches:
+      - feat/wasm-latency-reporting
+  pull_request:
+    paths:
+      - abi/include/wasm_plugin.h
+      - crates/wyldtone-plugin-runtime/**
+      - .github/workflows/latency-abi-regression.yml
+
+permissions:
+  contents: read
+
+jobs:
+  latency-abi:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Optional ABI and legacy WASM regressions
+        run: cargo test -p wyldtone-plugin-runtime --test latency_abi_compat --locked
+      - name: Runtime unit tests
+        run: cargo test -p wyldtone-plugin-runtime --lib --locked

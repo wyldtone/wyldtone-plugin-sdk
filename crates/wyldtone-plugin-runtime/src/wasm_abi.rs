@@ -71,6 +71,9 @@ pub struct WasmPlugin {
     pub plugin_pending_events:
        Option<TypedFunc<(), i32>>,
 
+    pub plugin_latency_samples: Option<TypedFunc<(), i32>>,
+    pub plugin_max_latency_samples: Option<TypedFunc<(), i32>>,
+
     // Optional bus-layout metadata ABI. Older plugins that do not export
     // these functions fall back to the host's legacy mono layout.
     pub plugin_input_bus_count:
@@ -288,6 +291,15 @@ impl WasmPlugin {
                     &mut store,
                     "plugin_pending_events",
                 )
+                .ok();
+
+        let plugin_latency_samples =
+            instance
+                .get_typed_func::<(), i32>(&mut store, "plugin_latency_samples")
+                .ok();
+        let plugin_max_latency_samples =
+            instance
+                .get_typed_func::<(), i32>(&mut store, "plugin_max_latency_samples")
                 .ok();
 
         let plugin_input_bus_count =
@@ -548,6 +560,8 @@ impl WasmPlugin {
             plugin_parameter_set,
 
             plugin_pending_events,
+            plugin_latency_samples,
+            plugin_max_latency_samples,
 
             plugin_input_bus_count,
             plugin_output_bus_count,
@@ -718,6 +732,31 @@ impl WasmPlugin {
                 .call(&mut self.store, ())
                 .expect("WASM plugin reset failed");
         }
+    }
+
+    /// Read the current whole-input-frame signal latency from an optional
+    /// plugin export. Missing, malformed, trapping or negative reports mean 0.
+    pub fn latency_samples(&mut self) -> usize {
+        const MAX_REPORTED_SAMPLES: i32 = 65_536;
+        self.plugin_latency_samples
+            .as_ref()
+            .and_then(|func| func.call(&mut self.store, ()).ok())
+            .unwrap_or(0)
+            .clamp(0, MAX_REPORTED_SAMPLES) as usize
+    }
+
+    /// An upper bound, evaluated after plugin_init. An absent maximum export
+    /// means fixed latency. A returned maximum smaller than the current value
+    /// is raised to the current value, so no under-allocation is introduced.
+    pub fn max_latency_samples(&mut self) -> usize {
+        const MAX_REPORTED_SAMPLES: i32 = 65_536;
+        let current = self.latency_samples();
+        self.plugin_max_latency_samples
+            .as_ref()
+            .and_then(|func| func.call(&mut self.store, ()).ok())
+            .unwrap_or(current as i32)
+            .clamp(0, MAX_REPORTED_SAMPLES)
+            .max(current as i32) as usize
     }
 
     pub fn take_pending_events(&mut self) -> u8 {
