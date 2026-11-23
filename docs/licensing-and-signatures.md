@@ -1,5 +1,11 @@
 # WAP signatures and licensing — compatibility proposal (not implemented)
 
+> **Separate concept:** `plugin.license` is now optional **open-source
+> copyright/SPDX attribution metadata** in WAP format v1, with bundled full
+> license notices. It does not activate a paid license, cryptographic
+> signature, host entitlement or DRM. This document proposes future
+> `licensing` (with an extra *-ing*) support for paid plugins.
+
 **Status: experimental design proposal.** This document reserves a direction for
 future interoperability; it is **not** a DRM implementation, a supported ABI, a
 security guarantee, or a mandatory requirement for beta WAP plugins. Existing
