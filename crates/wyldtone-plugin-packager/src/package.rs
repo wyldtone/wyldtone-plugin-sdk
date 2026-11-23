@@ -786,4 +786,53 @@ mod tests {
         )
         .unwrap();
     }
+    #[test]
+    fn wap_license_notices_are_packaged_and_missing_notices_fail_closed() {
+        use wyldtone_plugin_api::manifest::{PluginLicense, LicenseNotice};
+        let unique = format!(
+            "wyldtone-wap-licenses-{}-{:?}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos(),
+        );
+        let temp = std::env::temp_dir().join(unique);
+        std::fs::create_dir_all(&temp).unwrap();
+        let wasm = temp.join("plugin.wasm");
+        let manifest_path = temp.join("manifest.json");
+        let notice_path = temp.join("MIT.txt");
+        let wap = temp.join("test.wap");
+        std::fs::write(&wasm, [0x00, 0x61, 0x73, 0x6d, 0x01, 0, 0, 0]).unwrap();
+        std::fs::write(&notice_path, b"MIT License\nCopyright 2026 Test Author\n").unwrap();
+
+        let mut manifest = test_manifest();
+        manifest.plugin.license = Some(PluginLicense {
+            expression: "MIT".into(),
+            notices: vec![LicenseNotice {
+                component: "Upstream DSP".into(),
+                spdx: "MIT".into(),
+                path: "licenses/MIT.txt".into(),
+            }],
+        });
+        std::fs::write(&manifest_path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+
+        // A declared notice must not be accidentally dropped by an old builder.
+        assert!(create_wap_with_icon(&wasm, &manifest_path, &wap, None).is_err());
+        create_wap_with_icon_and_notices(
+            &wasm,
+            &manifest_path,
+            &wap,
+            None,
+            &[("licenses/MIT.txt".into(), notice_path)],
+        ).unwrap();
+
+        let packaged = load_wap_manifest(&wap).unwrap();
+        assert_eq!(packaged.plugin.license, manifest.plugin.license);
+        let mut zip = ZipArchive::new(std::fs::File::open(&wap).unwrap()).unwrap();
+        let mut license = String::new();
+        zip.by_name("licenses/MIT.txt").unwrap()
+            .read_to_string(&mut license).unwrap();
+        assert!(license.contains("MIT License"));
+        std::fs::remove_dir_all(temp).unwrap();
+    }
+
 }
