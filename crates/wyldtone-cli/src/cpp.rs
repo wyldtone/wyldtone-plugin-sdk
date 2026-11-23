@@ -116,8 +116,21 @@ pub fn build(
             .into());
         }
 
-        command.arg(source_path);
+        // em++ defaults to C++ language even for .c sources. Select the
+        // language explicitly to compile C99 DSP modules (designated array
+        // initializers, C ABI symbols) alongside the plugin's C++ adapter.
+        let language = match source_path.extension().and_then(|ext| ext.to_str()) {
+            Some("c") => "c",
+            Some("cc" | "cpp" | "cxx") => "c++",
+            _ => return Err(format!(
+                "Unsupported C/C++ plugin source extension: {}",
+                source_path.display()
+            ).into()),
+        };
+        command.arg("-x").arg(language).arg(source_path);
     }
+    // A generated bus source, when present, is C++.
+    command.arg("-x").arg("c++");
 
     // Generated weak definitions permit old plugins to provide strong, hand-written
     // exports. The post-build inspector validates that such overrides match config.
