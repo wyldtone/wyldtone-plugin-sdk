@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fs::File;
 use std::io::{Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use zip::write::SimpleFileOptions;
 use zip::{ZipArchive, ZipWriter};
@@ -34,6 +34,18 @@ pub fn create_wap_with_icon(
     output_path: &Path,
     icon_path: Option<&Path>,
 ) -> Result<(), Box<dyn Error>> {
+    create_wap_with_icon_and_notices(wasm_path, manifest_path, output_path, icon_path, &[])
+}
+
+/// Package optional OSS attribution files with the WASM. The files must
+/// exactly match the license metadata declared by the manifest.
+pub fn create_wap_with_icon_and_notices(
+    wasm_path: &Path,
+    manifest_path: &Path,
+    output_path: &Path,
+    icon_path: Option<&Path>,
+    notices: &[(String, PathBuf)],
+) -> Result<(), Box<dyn Error>> {
     if !wasm_path.is_file() {
         return Err(format!(
             "WASM file does not exist: {}",
@@ -48,6 +60,35 @@ pub fn create_wap_with_icon(
             manifest_path.display()
         )
         .into());
+    }
+
+    let metadata: PluginManifest = serde_json::from_slice(&std::fs::read(manifest_path)?)?;
+    let mut declared = std::collections::BTreeSet::new();
+    if let Some(license) = &metadata.plugin.license {
+        license.validate()?;
+        for notice in &license.notices {
+            declared.insert(notice.path.clone());
+        }
+    }
+    let mut supplied = std::collections::BTreeSet::new();
+    let mut bundled = Vec::new();
+    let mut total: usize = 0;
+    for (name, source) in notices {
+        if !declared.contains(name) || !supplied.insert(name.clone()) {
+            return Err(format!("Unexpected or duplicate license notice: {name}").into());
+        }
+        let bytes = std::fs::read(source)?;
+        if bytes.is_empty() || bytes.len() > 64 * 1024 || std::str::from_utf8(&bytes).is_err() {
+            return Err(format!("Invalid UTF-8 license notice or size: {name}").into());
+        }
+        total += bytes.len();
+        if total > 256 * 1024 {
+            return Err("Bundled license notices exceed 256 KiB".into());
+        }
+        bundled.push((name.clone(), bytes));
+    }
+    if supplied != declared {
+        return Err("Manifest license notices do not match the supplied files".into());
     }
 
     if let Some(parent) = output_path.parent() {
@@ -88,6 +129,11 @@ pub fn create_wap_with_icon(
         };
         zip.start_file(entry_name, options)?;
         zip.write_all(&icon)?;
+    }
+
+    for (name, bytes) in bundled {
+        zip.start_file(name, options)?;
+        zip.write_all(&bytes)?;
     }
 
     zip.finish()?;
@@ -502,6 +548,7 @@ mod tests {
                 version: "1.0.0".to_string(),
             category: None,
             description: None,
+            license: None,
             },
 
             parameters: vec![
