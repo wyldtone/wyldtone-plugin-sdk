@@ -20,6 +20,10 @@ pub struct PluginConfig {
     /// Optional plain-text description for plugin catalogs and inspectors.
     #[serde(default)]
     pub description: Option<String>,
+    /// Optional open-source licensing/attribution metadata for the WAP payload.
+    /// Does not express user entitlements or DRM.
+    #[serde(default)]
+    pub license: Option<crate::manifest::PluginLicense>,
     /// Optional relative path to SVG (theme-colored) or PNG (original colors).
     /// By default, icon.svg is preferred over icon.png in the plugin directory.
     #[serde(default)]

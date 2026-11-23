@@ -1,7 +1,10 @@
 # Public WAP format — interoperability contract (current SDK beta)
 
 WAP is a ZIP container containing **`plugin.wasm`** and **`manifest.json`**;
-optional artwork may be `icon.png` or `icon.svg`. `format_version` currently 1.
+optional artwork may be `icon.png` or `icon.svg`. An optional
+`plugin.license` section can declare SPDX open-source attribution and require
+matching `licenses/*.txt` or `licenses/*.md` ZIP entries. `format_version`
+remains 1; older WAPs without this metadata remain valid.
 The schema is defined in `crates/wyldtone-plugin-api/src/manifest.rs`.
 The plain C ABI is defined in `abi/include/wasm_plugin.h`.
 

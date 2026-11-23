@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fs::File;
 use std::io::{Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use zip::write::SimpleFileOptions;
 use zip::{ZipArchive, ZipWriter};
@@ -34,6 +34,18 @@ pub fn create_wap_with_icon(
     output_path: &Path,
     icon_path: Option<&Path>,
 ) -> Result<(), Box<dyn Error>> {
+    create_wap_with_icon_and_notices(wasm_path, manifest_path, output_path, icon_path, &[])
+}
+
+/// Package optional OSS attribution files with the WASM. The files must
+/// exactly match the license metadata declared by the manifest.
+pub fn create_wap_with_icon_and_notices(
+    wasm_path: &Path,
+    manifest_path: &Path,
+    output_path: &Path,
+    icon_path: Option<&Path>,
+    notices: &[(String, PathBuf)],
+) -> Result<(), Box<dyn Error>> {
     if !wasm_path.is_file() {
         return Err(format!(
             "WASM file does not exist: {}",
@@ -48,6 +60,35 @@ pub fn create_wap_with_icon(
             manifest_path.display()
         )
         .into());
+    }
+
+    let metadata: PluginManifest = serde_json::from_slice(&std::fs::read(manifest_path)?)?;
+    let mut declared = std::collections::BTreeSet::new();
+    if let Some(license) = &metadata.plugin.license {
+        license.validate()?;
+        for notice in &license.notices {
+            declared.insert(notice.path.clone());
+        }
+    }
+    let mut supplied = std::collections::BTreeSet::new();
+    let mut bundled = Vec::new();
+    let mut total: usize = 0;
+    for (name, source) in notices {
+        if !declared.contains(name) || !supplied.insert(name.clone()) {
+            return Err(format!("Unexpected or duplicate license notice: {name}").into());
+        }
+        let bytes = std::fs::read(source)?;
+        if bytes.is_empty() || bytes.len() > 64 * 1024 || std::str::from_utf8(&bytes).is_err() {
+            return Err(format!("Invalid UTF-8 license notice or size: {name}").into());
+        }
+        total += bytes.len();
+        if total > 256 * 1024 {
+            return Err("Bundled license notices exceed 256 KiB".into());
+        }
+        bundled.push((name.clone(), bytes));
+    }
+    if supplied != declared {
+        return Err("Manifest license notices do not match the supplied files".into());
     }
 
     if let Some(parent) = output_path.parent() {
@@ -88,6 +129,11 @@ pub fn create_wap_with_icon(
         };
         zip.start_file(entry_name, options)?;
         zip.write_all(&icon)?;
+    }
+
+    for (name, bytes) in bundled {
+        zip.start_file(name, options)?;
+        zip.write_all(&bytes)?;
     }
 
     zip.finish()?;
@@ -331,6 +377,20 @@ pub fn load_wap(
     let manifest: PluginManifest =
         serde_json::from_slice(&manifest_data)?;
 
+    if let Some(license) = &manifest.plugin.license {
+        license.validate()?;
+        for notice in &license.notices {
+            let mut entry = archive.by_name(&notice.path).map_err(|_| {
+                format!("WAP is missing declared license notice: {}", notice.path)
+            })?;
+            if entry.size() == 0 || entry.size() > 64 * 1024 {
+                return Err("WAP contains an empty or oversized license notice".into());
+            }
+            let mut text = String::new();
+            entry.read_to_string(&mut text)?;
+        }
+    }
+
     let wasm = {
         let mut wasm_file =
             archive
@@ -502,6 +562,7 @@ mod tests {
                 version: "1.0.0".to_string(),
             category: None,
             description: None,
+            license: None,
             },
 
             parameters: vec![
@@ -739,4 +800,53 @@ mod tests {
         )
         .unwrap();
     }
+    #[test]
+    fn wap_license_notices_are_packaged_and_missing_notices_fail_closed() {
+        use wyldtone_plugin_api::manifest::{PluginLicense, LicenseNotice};
+        let unique = format!(
+            "wyldtone-wap-licenses-{}-{:?}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos(),
+        );
+        let temp = std::env::temp_dir().join(unique);
+        std::fs::create_dir_all(&temp).unwrap();
+        let wasm = temp.join("plugin.wasm");
+        let manifest_path = temp.join("manifest.json");
+        let notice_path = temp.join("MIT.txt");
+        let wap = temp.join("test.wap");
+        std::fs::write(&wasm, [0x00, 0x61, 0x73, 0x6d, 0x01, 0, 0, 0]).unwrap();
+        std::fs::write(&notice_path, b"MIT License\nCopyright 2026 Test Author\n").unwrap();
+
+        let mut manifest = test_manifest();
+        manifest.plugin.license = Some(PluginLicense {
+            expression: "MIT".into(),
+            notices: vec![LicenseNotice {
+                component: "Upstream DSP".into(),
+                spdx: "MIT".into(),
+                path: "licenses/MIT.txt".into(),
+            }],
+        });
+        std::fs::write(&manifest_path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+
+        // A declared notice must not be accidentally dropped by an old builder.
+        assert!(create_wap_with_icon(&wasm, &manifest_path, &wap, None).is_err());
+        create_wap_with_icon_and_notices(
+            &wasm,
+            &manifest_path,
+            &wap,
+            None,
+            &[("licenses/MIT.txt".into(), notice_path)],
+        ).unwrap();
+
+        let packaged = load_wap_manifest(&wap).unwrap();
+        assert_eq!(packaged.plugin.license, manifest.plugin.license);
+        let mut zip = ZipArchive::new(std::fs::File::open(&wap).unwrap()).unwrap();
+        let mut license = String::new();
+        zip.by_name("licenses/MIT.txt").unwrap()
+            .read_to_string(&mut license).unwrap();
+        assert!(license.contains("MIT License"));
+        std::fs::remove_dir_all(temp).unwrap();
+    }
+
 }
