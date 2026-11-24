@@ -34,6 +34,60 @@ fn read_config(path: &Path) -> Result<PluginConfig> {
     Ok(config)
 }
 
+/// Fail fast on missing/inaccessible license notices *before* invoking
+/// CMake/JUCE, DSP probes and WAP packaging. The ZIP entry name from
+/// manifest.plugin.license.notices is relative to plugin.config.json.
+fn license_notice_files(config: &PluginConfig, plugin_dir: &Path) -> Result<Vec<(String, PathBuf)>> {
+    let Some(license) = &config.license else { return Ok(Vec::new()); };
+    // Path::parent("plugin.config.json") can return the empty path when
+    // building from the project root: resolve that as the working directory.
+    let project_root = if plugin_dir.as_os_str().is_empty() {
+        Path::new(".")
+    } else {
+        plugin_dir
+    };
+    let project_root = fs::canonicalize(project_root).map_err(|err| format!(
+        "Cannot resolve plugin project directory '{}': {err}", project_root.display()
+    ))?;
+    let mut files = Vec::with_capacity(license.notices.len());
+    for notice in &license.notices {
+        let file = project_root.join(&notice.path);
+        let resolved = fs::canonicalize(&file).map_err(|err| format!(
+            "Missing or inaccessible WAP license notice '{}': expected '{}' \
+             (relative to plugin.config.json). Create that file or correct license.notices[].path. \
+             Files linked from outside the mounted project directory must be copied inside. ({err})",
+            notice.component, file.display()
+        ))?;
+        // Never package files outside the plugin root through symlinks.
+        if !resolved.starts_with(&project_root) {
+            return Err(format!(
+                "WAP license notice '{}' resolves outside the plugin directory: '{}'",
+                notice.path, resolved.display()
+            ).into());
+        }
+        if !resolved.is_file() {
+            return Err(format!(
+                "WAP license notice '{}' is not a regular file: '{}'",
+                notice.path, resolved.display()
+            ).into());
+        }
+        let contents = fs::read(&resolved).map_err(|err| format!(
+            "Cannot read WAP license notice '{}': '{}' ({err})",
+            notice.path, resolved.display()
+        ))?;
+        if contents.is_empty() || contents.len() > 64 * 1024
+            || std::str::from_utf8(&contents).is_err()
+        {
+            return Err(format!(
+                "WAP license notice '{}' must contain 1..=65536 bytes of UTF-8 text: '{}'",
+                notice.path, resolved.display()
+            ).into());
+        }
+        files.push((notice.path.clone(), resolved));
+    }
+    Ok(files)
+}
+
 fn icon_for(config: &PluginConfig, dir: &Path) -> Result<Option<PathBuf>> {
     if let Some(icon) = &config.icon {
         let relative = Path::new(icon);
@@ -42,7 +96,14 @@ fn icon_for(config: &PluginConfig, dir: &Path) -> Result<Option<PathBuf>> {
         }
         let extension = relative.extension().and_then(|e| e.to_str()).unwrap_or("");
         if !["png", "svg"].contains(&extension) { return Err("Icon must be SVG or PNG".into()); }
-        return Ok(Some(dir.join(relative)));
+        let selected = dir.join(relative);
+        if !selected.is_file() {
+            return Err(format!(
+                "Configured plugin icon '{}' is missing or is not a file: '{}'",
+                icon, selected.display()
+            ).into());
+        }
+        return Ok(Some(selected));
     }
     for file in ["icon.svg", "icon.png"] {
         let candidate = dir.join(file);
@@ -124,6 +185,10 @@ fn build(path: &Path, options: BuildOptions) -> Result<()> {
     if selected_backends != 1 {
         return Err("Select exactly one backend (cpp, juce or faust)".into());
     }
+    // Do this before the potentially expensive JUCE compilation and DSP
+    // probe. The packager verifies these files again at archive creation.
+    let notices = license_notice_files(&config, dir)?;
+    let icon = icon_for(&config, dir)?;
     dependency("em++")?;
     let output_dir = dir.join("build").join("wyldtone");
     fs::create_dir_all(&output_dir)?;
@@ -150,12 +215,6 @@ fn build(path: &Path, options: BuildOptions) -> Result<()> {
         dsp_test::run(&wasm, options.fail_on_inactive, options.dsp_profile)?;
     }
     let dest = output_dir.join(package_name(&config.name));
-    let icon = icon_for(&config, dir)?;
-    let notices = config.license.as_ref().map(|license| {
-        license.notices.iter().map(|notice|
-            (notice.path.clone(), dir.join(&notice.path))
-        ).collect::<Vec<_>>()
-    }).unwrap_or_default();
     create_wap_with_icon_and_notices(&wasm, &manifest, &dest, icon.as_deref(), &notices)?;
     println!("WAP: {}", dest.display());
     Ok(())
@@ -267,6 +326,83 @@ mod build_option_tests {
             let values = flags.iter().map(|s| (*s).to_string()).collect::<Vec<_>>();
             assert!(parse_build_options(&values).is_err());
         }
+    }
+
+    #[test]
+    fn license_notice_preflight_fails_early_and_names_exact_project_path() {
+        let project = std::env::temp_dir().join(format!(
+            "wyldtone-license-preflight-{}-{:?}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
+        ));
+        fs::create_dir_all(&project).unwrap();
+        let config: PluginConfig = serde_json::from_value(serde_json::json!({
+            "id": "com.example.licensed",
+            "name": "Licensed effect",
+            "manufacturer": "Example",
+            "version": "1.0.0",
+            "license": {
+                "expression": "MIT",
+                "notices": [{
+                    "component": "Upstream DSP",
+                    "spdx": "MIT",
+                    "path": "licenses/MIT.txt"
+                }]
+            }
+        })).unwrap();
+
+        let expected = project.join("licenses/MIT.txt");
+        let error = license_notice_files(&config, &project).unwrap_err().to_string();
+        assert!(error.contains("Missing or inaccessible WAP license notice"));
+        assert!(error.contains(&expected.display().to_string()));
+        assert!(error.contains("plugin.config.json"));
+        assert!(!project.join("build").exists(), "preflight must not start compilation");
+
+        fs::create_dir_all(expected.parent().unwrap()).unwrap();
+        fs::write(&expected, b"MIT License\nCopyright Example\n").unwrap();
+        let sources = license_notice_files(&config, &project).unwrap();
+        assert_eq!(sources.len(), 1);
+        assert_eq!(sources[0].0, "licenses/MIT.txt");
+        assert_eq!(sources[0].1, fs::canonicalize(&expected).unwrap());
+
+        fs::write(&expected, b"\xff\xfe").unwrap();
+        let error = license_notice_files(&config, &project).unwrap_err().to_string();
+        assert!(error.contains("UTF-8 text"));
+        assert!(error.contains("licenses/MIT.txt"));
+
+        fs::remove_dir_all(project).unwrap();
+    }
+
+    #[test]
+    fn license_notice_preflight_is_optional_for_unlicensed_plugins() {
+        let config: PluginConfig = serde_json::from_value(serde_json::json!({
+            "id": "com.example.unlicensed",
+            "name": "No notices",
+            "manufacturer": "Example",
+            "version": "1.0.0"
+        })).unwrap();
+        assert!(license_notice_files(&config, Path::new("")).unwrap().is_empty());
+    }
+
+    #[test]
+    fn missing_explicit_icon_has_path_specific_preflight_error() {
+        let config: PluginConfig = serde_json::from_value(serde_json::json!({
+            "id": "com.example.icon",
+            "name": "Missing icon",
+            "manufacturer": "Example",
+            "version": "1.0.0",
+            "icon": "icons/plugin.svg"
+        })).unwrap();
+        let expected_root = std::env::temp_dir().join(format!(
+            "wyldtone-icon-preflight-{}-{:?}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
+        ));
+        let error = icon_for(&config, &expected_root).unwrap_err().to_string();
+        assert!(error.contains("Configured plugin icon"));
+        assert!(error.contains("icons/plugin.svg"));
     }
 
     #[test]

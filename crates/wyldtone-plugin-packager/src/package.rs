@@ -77,7 +77,11 @@ pub fn create_wap_with_icon_and_notices(
         if !declared.contains(name) || !supplied.insert(name.clone()) {
             return Err(format!("Unexpected or duplicate license notice: {name}").into());
         }
-        let bytes = std::fs::read(source)?;
+        let bytes = std::fs::read(source).map_err(|err| format!(
+            "Cannot read license notice '{}' from '{}': {err} \
+             (license.notices[].path must be relative to plugin.config.json)",
+            name, source.display()
+        ))?;
         if bytes.is_empty() || bytes.len() > 64 * 1024 || std::str::from_utf8(&bytes).is_err() {
             return Err(format!("Invalid UTF-8 license notice or size: {name}").into());
         }
@@ -115,7 +119,9 @@ pub fn create_wap_with_icon_and_notices(
     zip.write_all(&manifest_data)?;
 
     if let Some(path) = icon_path {
-        let icon = std::fs::read(path)?;
+        let icon = std::fs::read(path).map_err(|err| format!(
+            "Cannot read plugin icon '{}': {err}", path.display()
+        ))?;
         let entry_name = match path.extension().and_then(|ext| ext.to_str()) {
             Some(ext) if ext.eq_ignore_ascii_case("svg") => {
                 validate_svg_icon(&icon)?;
@@ -826,6 +832,8 @@ mod tests {
                 spdx: "MIT".into(),
                 path: "licenses/MIT.txt".into(),
             }],
+            source_url: Some("https://github.com/example/amp/tree/v1.0".into()),
+            build_instructions_url: Some("https://github.com/example/amp/blob/v1.0/BUILD.md".into()),
         });
         std::fs::write(&manifest_path, serde_json::to_vec(&manifest).unwrap()).unwrap();
 

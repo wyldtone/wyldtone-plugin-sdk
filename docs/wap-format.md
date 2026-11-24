@@ -3,8 +3,12 @@
 WAP is a ZIP container containing **`plugin.wasm`** and **`manifest.json`**;
 optional artwork may be `icon.png` or `icon.svg`. An optional
 `plugin.license` section can declare SPDX open-source attribution and require
-matching `licenses/*.txt` or `licenses/*.md` ZIP entries. `format_version`
-remains 1; older WAPs without this metadata remain valid.
+matching `licenses/*.txt` or `licenses/*.md` ZIP entries. For
+redistributable source packages, `plugin.license.source_url` and
+`plugin.license.build_instructions_url` optionally specify version-specific
+HTTPS links to the complete source and build scripts/instructions. They are
+metadata only; the packager never downloads or verifies remote content.
+`format_version` remains 1; older WAPs without this metadata remain valid.
 The schema is defined in `crates/wyldtone-plugin-api/src/manifest.rs`.
 The plain C ABI is defined in `abi/include/wasm_plugin.h`.
 
