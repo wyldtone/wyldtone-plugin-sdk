@@ -96,7 +96,14 @@ fn icon_for(config: &PluginConfig, dir: &Path) -> Result<Option<PathBuf>> {
         }
         let extension = relative.extension().and_then(|e| e.to_str()).unwrap_or("");
         if !["png", "svg"].contains(&extension) { return Err("Icon must be SVG or PNG".into()); }
-        return Ok(Some(dir.join(relative)));
+        let selected = dir.join(relative);
+        if !selected.is_file() {
+            return Err(format!(
+                "Configured plugin icon '{}' is missing or is not a file: '{}'",
+                icon, selected.display()
+            ).into());
+        }
+        return Ok(Some(selected));
     }
     for file in ["icon.svg", "icon.png"] {
         let candidate = dir.join(file);
@@ -181,6 +188,7 @@ fn build(path: &Path, options: BuildOptions) -> Result<()> {
     // Do this before the potentially expensive JUCE compilation and DSP
     // probe. The packager verifies these files again at archive creation.
     let notices = license_notice_files(&config, dir)?;
+    let icon = icon_for(&config, dir)?;
     dependency("em++")?;
     let output_dir = dir.join("build").join("wyldtone");
     fs::create_dir_all(&output_dir)?;
@@ -207,7 +215,6 @@ fn build(path: &Path, options: BuildOptions) -> Result<()> {
         dsp_test::run(&wasm, options.fail_on_inactive, options.dsp_profile)?;
     }
     let dest = output_dir.join(package_name(&config.name));
-    let icon = icon_for(&config, dir)?;
     create_wap_with_icon_and_notices(&wasm, &manifest, &dest, icon.as_deref(), &notices)?;
     println!("WAP: {}", dest.display());
     Ok(())
