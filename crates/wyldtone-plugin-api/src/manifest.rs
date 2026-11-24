@@ -74,6 +74,11 @@ fn valid_public_source_url(link: &str) -> bool {
         || authority.contains(':') || authority.contains('[') || authority.contains(']')
         || !authority.contains('.')
         || authority.starts_with('.') || authority.ends_with('.')
+        || authority.parse::<std::net::Ipv4Addr>().is_ok()
+        || authority.ends_with(".local") || authority.ends_with(".internal")
+        || authority.split('.').any(|label| {
+            label.is_empty() || label.starts_with('-') || label.ends_with('-')
+        })
         || !authority.bytes().all(|c| c.is_ascii_alphanumeric() || matches!(c, b'.' | b'-'))
     {
         return false;
