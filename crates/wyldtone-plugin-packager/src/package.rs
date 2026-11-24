@@ -826,6 +826,8 @@ mod tests {
                 spdx: "MIT".into(),
                 path: "licenses/MIT.txt".into(),
             }],
+            source_url: Some("https://github.com/example/amp/tree/v1.0".into()),
+            build_instructions_url: Some("https://github.com/example/amp/blob/v1.0/BUILD.md".into()),
         });
         std::fs::write(&manifest_path, serde_json::to_vec(&manifest).unwrap()).unwrap();
 
