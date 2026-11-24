@@ -40,6 +40,13 @@ pub struct PluginLicense {
     pub expression: String,
     /// Entries inside the WAP ZIP, not external links or filesystem paths.
     pub notices: Vec<LicenseNotice>,
+    /// HTTPS link to the complete corresponding source of THIS released WAP,
+    /// ideally a fixed commit/tag or immutable source archive.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_url: Option<String>,
+    /// HTTPS link to matching build/install instructions and required scripts.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub build_instructions_url: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -49,8 +56,38 @@ pub struct LicenseNotice {
     pub path: String,
 }
 
+/// Only HTTPS references without credentials or dangerous/ambiguous URL text
+/// are accepted. Links are metadata, never downloaded by the SDK.
+fn valid_public_source_url(link: &str) -> bool {
+    if link.len() > 2048 || !link.starts_with("https://") {
+        return false;
+    }
+    if link.bytes().any(|byte|
+        byte <= 0x20 || byte >= 0x7f
+        || matches!(byte, b'\\' | b'<' | b'>' | b'"' | b'\'' | b'`')
+    ) {
+        return false;
+    }
+    let rest = &link["https://".len()..];
+    let authority = rest.split(['/', '?', '#']).next().unwrap_or("");
+    if authority.is_empty() || authority.contains('@') || authority.contains('%')
+        || authority.contains(':') || authority.contains('[') || authority.contains(']')
+        || !authority.contains('.')
+        || authority.starts_with('.') || authority.ends_with('.')
+        || !authority.bytes().all(|c| c.is_ascii_alphanumeric() || matches!(c, b'.' | b'-'))
+    {
+        return false;
+    }
+    true
+}
+
 impl PluginLicense {
     pub fn validate(&self) -> Result<(), String> {
+        if self.source_url.as_deref().is_some_and(|url| !valid_public_source_url(url))
+            || self.build_instructions_url.as_deref().is_some_and(|url| !valid_public_source_url(url))
+        {
+            return Err("Source and build instruction URLs must be valid public HTTPS links".into());
+        }
         if self.expression.is_empty() || self.expression.len() > 128
             || !self.expression.bytes().all(|b| b.is_ascii_alphanumeric()
                 || matches!(b, b' ' | b'.' | b'-' | b'+' | b'(' | b')'))
@@ -517,6 +554,8 @@ mod tests {
                 spdx: "MIT".into(),
                 path: "licenses/0xFX-MIT.txt".into(),
             }],
+            source_url: None,
+            build_instructions_url: None,
         };
         license.validate().unwrap();
         let decoded: PluginLicense =
@@ -530,6 +569,67 @@ mod tests {
         invalid.notices[0].path = "licenses/ok.txt".into();
         invalid.notices.push(invalid.notices[0].clone());
         assert!(invalid.validate().is_err());
+    }
+
+    #[test]
+    fn gpl_source_and_build_urls_roundtrip_in_manifest_license() {
+        let metadata = serde_json::json!({
+            "expression": "GPL-3.0-or-later",
+            "notices": [{
+                "component": "GPL plugin source",
+                "spdx": "GPL-3.0-or-later",
+                "path": "licenses/GPL.txt"
+            }],
+            "source_url": "https://github.com/example/plugin/tree/76abcde/src",
+            "build_instructions_url": "https://github.com/example/plugin/blob/76abcde/BUILD.md"
+        });
+        let license: PluginLicense = serde_json::from_value(metadata.clone()).unwrap();
+        license.validate().unwrap();
+        assert_eq!(serde_json::to_value(&license).unwrap(), metadata);
+        assert_eq!(
+            license.source_url.as_deref(),
+            Some("https://github.com/example/plugin/tree/76abcde/src")
+        );
+        // Older license declarations without URLs remain deserializable.
+        let legacy: PluginLicense = serde_json::from_value(serde_json::json!({
+            "expression": "MIT",
+            "notices": [{
+                "component": "Legacy", "spdx": "MIT",
+                "path": "licenses/MIT.txt"
+            }]
+        })).unwrap();
+        assert_eq!(legacy.source_url, None);
+        assert_eq!(legacy.build_instructions_url, None);
+        assert!(!serde_json::to_string(&legacy).unwrap().contains("source_url"));
+    }
+
+    #[test]
+    fn unsafe_source_and_build_instruction_links_are_rejected() {
+        let mut license: PluginLicense = serde_json::from_value(serde_json::json!({
+            "expression": "GPL-3.0-only",
+            "notices": [{
+                "component": "Source", "spdx": "GPL-3.0-only",
+                "path": "licenses/GPL.txt"
+            }]
+        })).unwrap();
+        for bad in [
+            "javascript:alert(1)",
+            "http://example.org/source",
+            "https://example.org@attacker.example/code",
+            "https://example.org\\evil.test/",
+            "https://example.org/a?b=<script>",
+            "https:///no-host",
+            "https://example.org/unsafe space",
+            "https://127.0.0.1/build",
+            "https://example.org:443/source",
+        ] {
+            license.source_url = Some(bad.to_string());
+            assert!(license.validate().is_err(), "accepted dangerous URL: {bad}");
+        }
+        license.source_url = Some("https://github.com/example/plugin/tree/v1.0".into());
+        license.build_instructions_url =
+            Some("https://github.com/example/plugin/blob/v1.0/BUILD.md".into());
+        license.validate().unwrap();
     }
 
     #[test]
