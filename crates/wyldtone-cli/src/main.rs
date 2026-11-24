@@ -322,6 +322,63 @@ mod build_option_tests {
     }
 
     #[test]
+    fn license_notice_preflight_fails_early_and_names_exact_project_path() {
+        let project = std::env::temp_dir().join(format!(
+            "wyldtone-license-preflight-{}-{:?}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
+        ));
+        fs::create_dir_all(&project).unwrap();
+        let config: PluginConfig = serde_json::from_value(serde_json::json!({
+            "id": "com.example.licensed",
+            "name": "Licensed effect",
+            "manufacturer": "Example",
+            "version": "1.0.0",
+            "license": {
+                "expression": "MIT",
+                "notices": [{
+                    "component": "Upstream DSP",
+                    "spdx": "MIT",
+                    "path": "licenses/MIT.txt"
+                }]
+            }
+        })).unwrap();
+
+        let expected = project.join("licenses/MIT.txt");
+        let error = license_notice_files(&config, &project).unwrap_err().to_string();
+        assert!(error.contains("Missing or inaccessible WAP license notice"));
+        assert!(error.contains(&expected.display().to_string()));
+        assert!(error.contains("plugin.config.json"));
+        assert!(!project.join("build").exists(), "preflight must not start compilation");
+
+        fs::create_dir_all(expected.parent().unwrap()).unwrap();
+        fs::write(&expected, b"MIT License\nCopyright Example\n").unwrap();
+        let sources = license_notice_files(&config, &project).unwrap();
+        assert_eq!(sources.len(), 1);
+        assert_eq!(sources[0].0, "licenses/MIT.txt");
+        assert_eq!(sources[0].1, fs::canonicalize(&expected).unwrap());
+
+        fs::write(&expected, b"\xff\xfe").unwrap();
+        let error = license_notice_files(&config, &project).unwrap_err().to_string();
+        assert!(error.contains("UTF-8 text"));
+        assert!(error.contains("licenses/MIT.txt"));
+
+        fs::remove_dir_all(project).unwrap();
+    }
+
+    #[test]
+    fn license_notice_preflight_is_optional_for_unlicensed_plugins() {
+        let config: PluginConfig = serde_json::from_value(serde_json::json!({
+            "id": "com.example.unlicensed",
+            "name": "No notices",
+            "manufacturer": "Example",
+            "version": "1.0.0"
+        })).unwrap();
+        assert!(license_notice_files(&config, Path::new("")).unwrap().is_empty());
+    }
+
+    #[test]
     fn parses_dsp_profiles_for_build_and_standalone_tests() {
         let opts = parse_build_options(&["--dsp-profile".into(), "deep".into()]).unwrap();
         assert_eq!(opts.dsp_profile, ProbeProfile::Deep);
