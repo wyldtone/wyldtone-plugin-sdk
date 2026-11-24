@@ -77,7 +77,11 @@ pub fn create_wap_with_icon_and_notices(
         if !declared.contains(name) || !supplied.insert(name.clone()) {
             return Err(format!("Unexpected or duplicate license notice: {name}").into());
         }
-        let bytes = std::fs::read(source)?;
+        let bytes = std::fs::read(source).map_err(|err| format!(
+            "Cannot read license notice '{}' from '{}': {err} \
+             (license.notices[].path must be relative to plugin.config.json)",
+            name, source.display()
+        ))?;
         if bytes.is_empty() || bytes.len() > 64 * 1024 || std::str::from_utf8(&bytes).is_err() {
             return Err(format!("Invalid UTF-8 license notice or size: {name}").into());
         }
