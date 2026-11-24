@@ -386,6 +386,26 @@ mod build_option_tests {
     }
 
     #[test]
+    fn missing_explicit_icon_has_path_specific_preflight_error() {
+        let config: PluginConfig = serde_json::from_value(serde_json::json!({
+            "id": "com.example.icon",
+            "name": "Missing icon",
+            "manufacturer": "Example",
+            "version": "1.0.0",
+            "icon": "icons/plugin.svg"
+        })).unwrap();
+        let expected_root = std::env::temp_dir().join(format!(
+            "wyldtone-icon-preflight-{}-{:?}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
+        ));
+        let error = icon_for(&config, &expected_root).unwrap_err().to_string();
+        assert!(error.contains("Configured plugin icon"));
+        assert!(error.contains("icons/plugin.svg"));
+    }
+
+    #[test]
     fn parses_dsp_profiles_for_build_and_standalone_tests() {
         let opts = parse_build_options(&["--dsp-profile".into(), "deep".into()]).unwrap();
         assert_eq!(opts.dsp_profile, ProbeProfile::Deep);
