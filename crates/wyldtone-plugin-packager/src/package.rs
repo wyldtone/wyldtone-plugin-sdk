@@ -119,7 +119,9 @@ pub fn create_wap_with_icon_and_notices(
     zip.write_all(&manifest_data)?;
 
     if let Some(path) = icon_path {
-        let icon = std::fs::read(path)?;
+        let icon = std::fs::read(path).map_err(|err| format!(
+            "Cannot read plugin icon '{}': {err}", path.display()
+        ))?;
         let entry_name = match path.extension().and_then(|ext| ext.to_str()) {
             Some(ext) if ext.eq_ignore_ascii_case("svg") => {
                 validate_svg_icon(&icon)?;
