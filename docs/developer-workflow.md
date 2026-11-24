@@ -136,6 +136,45 @@ The JUCE mount is separate from the SDK, and `../JUCE-upstream` in Compose
 refers to a **sibling directory on the Windows host**. JUCE itself is not
 shipped with the SDK.
 
+## License notices, source code and build instructions
+
+The optional `license` section in `plugin.config.json` is copied into the
+WAP `manifest.json`. Full notice files must be bundled in
+`licenses/*.txt` or `licenses/*.md` as declared by the manifest. A plugin
+with GPL/LGPL/AGPL components should additionally provide **source and build
+URLs for the exact distributed version**, for example:
+
+```json
+{
+  "license": {
+    "expression": "GPL-3.0-or-later",
+    "notices": [
+      {
+        "component": "Example DSP",
+        "spdx": "GPL-3.0-or-later",
+        "path": "licenses/GPL.txt"
+      }
+    ],
+    "source_url": "https://github.com/example/plugin/tree/7ab12cd",
+    "build_instructions_url": "https://github.com/example/plugin/blob/7ab12cd/BUILD.md"
+  }
+}
+```
+
+The `license` object is placed alongside `id`, `version`, `cpp` / `juce`
+and `audio` in `plugin.config.json`. The SDK accepts these two optional
+HTTPS URLs and checks their shape. **Wyldtone Cloud requires both URLs for
+new GPL/LGPL/AGPL WAP submissions.** Old WAPs without the fields continue to
+load; they do not magically become compliant.
+
+Use a fixed commit/tag or an immutable downloadable source archive rather
+than a moving `main` branch. Include the complete corresponding source for
+the **actual released WAP**, with any applicable modifications, project files,
+required scripts and documented build steps. The Cloud only validates URL
+syntax; it cannot verify that your source archive is complete or that the
+external URLs will remain accessible. Merely having a link in the manifest
+is not by itself proof of license compliance.
+
 ## Prerequisites
 
 Run `docker compose build sdk` once for the documented Linux build environment.
